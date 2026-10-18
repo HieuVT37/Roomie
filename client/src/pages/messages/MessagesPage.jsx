@@ -4,6 +4,8 @@ import { useAuth } from "../../context/AuthContext";
 import { listConversationsApi, getMessagesApi, sendMessageApi } from "../../api/conversations";
 import Avatar from "../../components/Avatar";
 import Lightbox from "../../components/Lightbox";
+import CountBadge from "../../components/CountBadge";
+import { useNotifications } from "../../context/NotificationContext";
 
 const POLL_MS = 4000;
 const MAX_IMAGES = 4;
@@ -141,8 +143,11 @@ export default function MessagesPage() {
   const [canSend, setCanSend] = useState(true);
   const [error, setError] = useState("");
   const [viewer, setViewer] = useState(null); // { images, index }
+  const { refresh: refreshNotifications } = useNotifications();
   const lastRef = useRef(null);
-  const bottomRef = useRef(null);
+  const listRef = useRef(null); // khung cuộn của tin nhắn
+  const stickRef = useRef(true); // đang ở sát cuối khung chat thì mới tự cuộn theo tin mới
+  const firstScrollRef = useRef(true);
 
   // Danh sách hội thoại (làm mới mỗi 10 giây để cập nhật tin chưa đọc)
   useEffect(() => {
@@ -178,6 +183,8 @@ export default function MessagesPage() {
     lastRef.current = null;
     setMessages([]);
     setError("");
+    firstScrollRef.current = true;
+    stickRef.current = true;
 
     const load = async () => {
       try {
@@ -188,7 +195,9 @@ export default function MessagesPage() {
           setMessages(data.messages);
           initial = false;
           setConvs((list) => list.map((c) => (c.id === conversationId ? { ...c, unread: 0 } : c)));
+          refreshNotifications();
         } else if (data.messages.length) {
+          refreshNotifications();
           setMessages((prev) => {
             const seen = new Set(prev.map((m) => m._id));
             return [...prev, ...data.messages.filter((m) => !seen.has(m._id))];
@@ -208,15 +217,38 @@ export default function MessagesPage() {
       active = false;
       clearInterval(timer);
     };
-  }, [conversationId]);
+  }, [conversationId, refreshNotifications]);
+
+  // Chỉ cuộn bên trong khung chat (không cuộn cả trang nên không bị lộ phần footer)
+  const scrollToBottom = (behavior) => {
+    const el = listRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior });
+  };
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!messages.length) return;
+    if (firstScrollRef.current) {
+      scrollToBottom("auto"); // mở cuộc trò chuyện: nhảy thẳng tới tin mới nhất
+      firstScrollRef.current = false;
+    } else if (stickRef.current) {
+      scrollToBottom("smooth");
+    }
   }, [messages.length]);
+
+  const handleListScroll = (e) => {
+    const el = e.currentTarget;
+    stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+  };
+
+  // Ảnh tải xong làm khung cao thêm: giữ nguyên vị trí cuối nếu đang ở cuối
+  const handleImageLoad = () => {
+    if (stickRef.current) scrollToBottom("auto");
+  };
 
   // Gọi từ Composer: lỗi được ném ra để Composer tự hiển thị
   const send = async (text, files) => {
     const { message } = await sendMessageApi(conversationId, text, files);
+    stickRef.current = true;
     setMessages((prev) => (prev.some((m) => m._id === message._id) ? prev : [...prev, message]));
     setConvs((list) =>
       list.map((c) =>
@@ -247,14 +279,12 @@ export default function MessagesPage() {
           >
             <Avatar src={c.other.avatarUrl} name={c.other.displayName} size={40} />
             <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">{c.other.displayName}</p>
-              <p className="truncate text-xs text-gray-500 dark:text-gray-400">
+              <p className={`truncate ${c.unread > 0 ? "font-bold" : "font-medium"}`}>{c.other.displayName}</p>
+              <p className={`truncate text-xs ${c.unread > 0 ? "font-semibold text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}>
                 {c.lastMessage?.text || "Chưa có tin nhắn"}
               </p>
             </div>
-            {c.unread > 0 && (
-              <span className="rounded-full bg-indigo-600 px-2 py-0.5 text-xs text-white">{c.unread}</span>
-            )}
+            <CountBadge count={c.unread} inline />
           </button>
         ))}
       </aside>
@@ -272,7 +302,7 @@ export default function MessagesPage() {
               <h2 className="font-semibold">{active?.other.displayName || "Cuộc trò chuyện"}</h2>
             </header>
 
-            <div className="flex-1 space-y-2 overflow-y-auto p-4">
+            <div ref={listRef} onScroll={handleListScroll} className="flex-1 space-y-2 overflow-y-auto p-4">
               {messages.map((m) => {
                 const mine = m.senderId === user.id;
                 const hasImages = m.images?.length > 0;
@@ -296,6 +326,7 @@ export default function MessagesPage() {
                                 src={url}
                                 alt="Ảnh đã gửi"
                                 loading="lazy"
+                                onLoad={handleImageLoad}
                                 className={`w-full object-cover ${m.images.length > 1 ? "aspect-square" : "max-h-72"}`}
                               />
                             </button>
@@ -310,7 +341,6 @@ export default function MessagesPage() {
                   </div>
                 );
               })}
-              <div ref={bottomRef} />
             </div>
 
             {error && (

@@ -12,6 +12,8 @@ export const adminListingsApi = (params) => api.get("/admin/listings", { params 
 export const adminModerateApi = (kind, id, status, note) =>
   api.patch(`/admin/listings/${kind}/${id}/moderation`, { status, note }).then(d);
 
+export const adminDeleteListingApi = (kind, id) => api.delete(`/admin/listings/${kind}/${id}`).then(d);
+
 export const adminReportsApi = (params) => api.get("/admin/reports", { params }).then(d);
 export const adminHandleReportApi = (id, data) => api.patch(`/admin/reports/${id}`, data).then(d);
 

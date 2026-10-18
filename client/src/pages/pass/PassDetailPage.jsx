@@ -7,6 +7,7 @@ import ReportButton from "../../components/ReportButton";
 import BackButton from "../../components/BackButton";
 import FavoriteButton from "../../components/FavoriteButton";
 import usePageTitle from "../../hooks/usePageTitle";
+import MessageButton from "../../components/MessageButton";
 import {
   PASS_TYPE_LABELS, PASS_STATUS_LABELS, MODERATION_LABELS, ITEM_CATEGORY_LABELS,
   CONDITION_LABELS, DEAL_LABELS, passPriceText, formatVND,
@@ -99,7 +100,7 @@ export default function PassDetailPage() {
 
       {isOwner && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-indigo-50 px-4 py-3 text-sm dark:bg-indigo-950">
-          <span>Đây là bài của bạn · {MODERATION_LABELS[l.moderationStatus]}</span>
+          <span>Đây là bài của bạn · {MODERATION_LABELS[l.moderationStatus]}{l.moderationStatus === "pending" && " · Bài sẽ hiển thị công khai sau khi admin duyệt"}</span>
           <Link to={`/pass/${l.id}/edit`} className="rounded-lg bg-indigo-600 px-3 py-1 text-white">Chỉnh sửa</Link>
         </div>
       )}
@@ -153,7 +154,8 @@ export default function PassDetailPage() {
               Đăng nhập để xem liên hệ
             </Link>
           )}
-            {user && !isOwner && user.role !== "admin" && <ReportButton targetType="pass" targetId={l.id} fullWidth />}
+          {user && !isOwner && user.role !== "admin" && <MessageButton userId={owner.userId} />}
+          {user && !isOwner && user.role !== "admin" && <ReportButton targetType="pass" targetId={l.id} fullWidth />}
         </aside>
       </div>
     </div>

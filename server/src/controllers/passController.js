@@ -55,7 +55,8 @@ async function assertQuota(user) {
   }
 }
 
-const initialModeration = () => (process.env.AUTO_APPROVE_LISTINGS === "false" ? "pending" : "approved");
+// Mọi bài mới đều phải chờ admin duyệt mới hiển thị công khai
+const initialModeration = () => "pending";
 
 function buildData(body) {
   const data = {
@@ -187,7 +188,8 @@ export const updatePass = asyncHandler(async (req, res) => {
   // PUT thay thế toàn bộ: trường nào không gửi lên thì bị xóa
   const data = buildData(req.body);
   for (const key of Object.keys(data)) listing.set(key, data[key]);
-  if (process.env.AUTO_APPROVE_LISTINGS === "false") listing.moderationStatus = "pending"; // sửa bài thì phải duyệt lại
+  listing.moderationStatus = "pending"; // sửa bài thì phải duyệt lại
+  listing.moderationNote = "";
   await listing.save();
 
   res.json({ listing: toPassDto(listing.toObject()) });

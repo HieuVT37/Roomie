@@ -28,6 +28,12 @@ const serialize = (c) => ({
   respondedAt: c.respondedAt,
 });
 
+// Mục này có phải thông báo mới đối với "tôi" không
+const isUnseenFor = (c, me) =>
+  String(c.receiverId) === String(me)
+    ? c.status === "pending" && c.unseenByReceiver !== false
+    : Boolean(c.unseenByRequester);
+
 const checkId = (id, label = "Mã") => {
   if (!mongoose.isValidObjectId(id)) throw httpError(400, `${label} không hợp lệ`);
 };
@@ -39,6 +45,18 @@ async function loadMine(id, me) {
   const mine = conn && [String(conn.requesterId), String(conn.receiverId)].includes(String(me._id));
   if (!mine) throw httpError(404, "Không tìm thấy kết nối");
   return conn;
+}
+
+// Số thông báo chưa xem của từng tab
+export async function unseenCounts(me) {
+  const [received, sentPending, sentRejected, accepted] = await Promise.all([
+    Connection.countDocuments({ receiverId: me, status: "pending", unseenByReceiver: { $ne: false } }),
+    Connection.countDocuments({ requesterId: me, status: "pending", unseenByRequester: true }),
+    Connection.countDocuments({ requesterId: me, status: "rejected", unseenByRequester: true }),
+    Connection.countDocuments({ requesterId: me, status: "accepted", unseenByRequester: true }),
+  ]);
+  const sent = sentPending + sentRejected;
+  return { received, sent, accepted, total: received + sent + accepted };
 }
 
 /* ---------------- Gửi yêu cầu ---------------- */
@@ -98,6 +116,8 @@ export const sendRequest = asyncHandler(async (req, res) => {
     blockedBy: null,
     requestedAt: new Date(),
     respondedAt: null,
+    unseenByReceiver: true,
+    unseenByRequester: false,
   };
 
   let conn;
@@ -118,7 +138,8 @@ export const listConnections = asyncHandler(async (req, res) => {
 
   const filters = {
     received: { receiverId: me, status: "pending" },
-    sent: { requesterId: me, status: "pending" },
+    // Gồm cả yêu cầu vừa bị từ chối mà người gửi chưa xem, để họ biết được phản hồi
+    sent: { requesterId: me, $or: [{ status: "pending" }, { status: "rejected", unseenByRequester: true }] },
     accepted: { $or: [{ requesterId: me }, { receiverId: me }], status: "accepted" },
     blocked: { blockedBy: me, status: "blocked" },
   };
@@ -131,6 +152,7 @@ export const listConnections = asyncHandler(async (req, res) => {
 
   const items = conns.map((c, i) => ({
     ...serialize(c),
+    unseen: isUnseenFor(c, me),
     user: brief(byUser.get(String(otherIds[i])), otherIds[i]),
   }));
   res.json({ items });
@@ -152,6 +174,7 @@ export const summary = asyncHandler(async (req, res) => {
     requestsUsed: used,
     requestsLimit: limits.maxConnectionRequestsPerMonth,
     plan: req.user.currentPlan,
+    unseen: await unseenCounts(me),
   });
 });
 
@@ -163,6 +186,8 @@ export const accept = asyncHandler(async (req, res) => {
 
   conn.status = "accepted";
   conn.respondedAt = new Date();
+  conn.unseenByReceiver = false;
+  conn.unseenByRequester = true; // báo cho người gửi biết đã được chấp nhận
   await conn.save();
   const conv = await ensureConversation(conn);
   res.json({ connection: serialize(conn), conversationId: conv._id });
@@ -175,6 +200,8 @@ export const reject = asyncHandler(async (req, res) => {
 
   conn.status = "rejected";
   conn.respondedAt = new Date();
+  conn.unseenByReceiver = false;
+  conn.unseenByRequester = true; // báo cho người gửi biết bị từ chối
   await conn.save();
   res.json({ connection: serialize(conn) });
 });
@@ -186,6 +213,7 @@ export const cancel = asyncHandler(async (req, res) => {
 
   conn.status = "cancelled";
   conn.respondedAt = new Date();
+  conn.unseenByReceiver = false;
   await conn.save();
   res.json({ connection: serialize(conn) });
 });
@@ -199,6 +227,31 @@ export const disconnect = asyncHandler(async (req, res) => {
   conn.respondedAt = new Date();
   await conn.save();
   res.json({ message: "Đã hủy kết nối" });
+});
+
+// Mở tab nào thì xóa chấm đỏ của tab đó
+export const markSeen = asyncHandler(async (req, res) => {
+  const me = req.user._id;
+  const { type } = req.body;
+  if (type === "received") {
+    await Connection.updateMany(
+      { receiverId: me, status: "pending", unseenByReceiver: { $ne: false } },
+      { $set: { unseenByReceiver: false } }
+    );
+  } else if (type === "sent") {
+    await Connection.updateMany(
+      { requesterId: me, status: { $in: ["pending", "rejected"] }, unseenByRequester: true },
+      { $set: { unseenByRequester: false } }
+    );
+  } else if (type === "accepted") {
+    await Connection.updateMany(
+      { requesterId: me, status: "accepted", unseenByRequester: true },
+      { $set: { unseenByRequester: false } }
+    );
+  } else {
+    throw httpError(400, "Loại danh sách không hợp lệ");
+  }
+  res.json({ ok: true });
 });
 
 /* ---------------- Chặn / bỏ chặn ---------------- */

@@ -44,9 +44,14 @@ export default function MyListingsPage() {
             </p>
           )}
         </div>
-        <Link to="/accommodation/new" className="rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700">
-          + Đăng tin mới
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/accommodation" className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600">
+            Xem tất cả tin
+          </Link>
+          <Link to="/accommodation/new" className="rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700">
+            + Đăng tin mới
+          </Link>
+        </div>
       </div>
 
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-300">{error}</p>}

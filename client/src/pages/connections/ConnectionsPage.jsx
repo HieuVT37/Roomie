@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  listConnectionsApi, connectionSummaryApi, acceptApi, rejectApi, cancelApi, disconnectApi, unblockApi,
+  listConnectionsApi, connectionSummaryApi, markSeenApi, acceptApi, rejectApi, cancelApi, disconnectApi, unblockApi,
 } from "../../api/connections";
+import { useNotifications } from "../../context/NotificationContext";
+import RedDot from "../../components/RedDot";
 import Avatar from "../../components/Avatar";
 import ScoreBadge from "../../components/ScoreBadge";
 
 const TABS = [
-  { key: "received", label: "Nhận được", count: "receivedPending" },
-  { key: "sent", label: "Đã gửi", count: "sentPending" },
-  { key: "accepted", label: "Đã kết nối", count: "accepted" },
+  { key: "received", label: "Nhận được", count: "receivedPending", dot: "received" },
+  { key: "sent", label: "Đã gửi", count: "sentPending", dot: "sent" },
+  { key: "accepted", label: "Đã kết nối", count: "accepted", dot: "accepted" },
   { key: "blocked", label: "Đã chặn" },
 ];
 
@@ -31,6 +33,7 @@ export default function ConnectionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const { refresh: refreshNotifications } = useNotifications();
 
   useEffect(() => {
     let active = true;
@@ -41,13 +44,23 @@ export default function ConnectionsPage() {
         if (!active) return;
         setItems(list.items);
         setSummary(sum);
+        // Đã mở tab này thì xóa chấm đỏ của tab (các mục mới vẫn được đánh dấu "Mới" trong lần hiển thị này)
+        if (list.items.some((c) => c.unseen)) {
+          markSeenApi(tab)
+            .then(() => {
+              if (!active) return;
+              setSummary((s) => (s ? { ...s, unseen: { ...s.unseen, [tab]: 0 } } : s));
+              refreshNotifications();
+            })
+            .catch(() => {});
+        }
       })
       .catch((err) => active && setError(err.response?.data?.message || "Không thể kết nối máy chủ"))
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
     };
-  }, [tab, reloadKey]);
+  }, [tab, reloadKey, refreshNotifications]);
 
   const act = async (fn) => {
     setError("");
@@ -80,6 +93,7 @@ export default function ConnectionsPage() {
               : "border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-gray-100"}`}
           >
             {t.label}
+            {summary?.unseen?.[t.dot] > 0 && <RedDot className="ml-1 align-middle" />}
             {summary && t.count && summary[t.count] > 0 && (
               <span className="ml-1 rounded-full bg-indigo-100 px-2 text-xs text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200">
                 {summary[t.count]}
@@ -103,6 +117,17 @@ export default function ConnectionsPage() {
                   {c.user.displayName}
                 </Link>
                 {c.matchScore !== null && c.matchScore !== undefined && <ScoreBadge score={c.matchScore} />}
+                {c.unseen && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600 dark:bg-red-950 dark:text-red-300">
+                    <RedDot className="!h-1.5 !w-1.5" /> Mới
+                  </span>
+                )}
+                {tab === "sent" && c.status === "rejected" && (
+                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">Đã bị từ chối</span>
+                )}
+                {tab === "accepted" && c.unseen && (
+                  <span className="text-xs text-green-600 dark:text-green-400">Đã chấp nhận kết nối của bạn</span>
+                )}
               </div>
               {c.message && <p className="text-sm text-gray-600 dark:text-gray-300">“{c.message}”</p>}
             </div>
@@ -114,7 +139,7 @@ export default function ConnectionsPage() {
                   <button className={outline} onClick={() => act(() => rejectApi(c.id))}>Từ chối</button>
                 </>
               )}
-              {tab === "sent" && (
+              {tab === "sent" && c.status === "pending" && (
                 <button className={outline} onClick={() => act(() => cancelApi(c.id))}>Hủy yêu cầu</button>
               )}
               {tab === "accepted" && (

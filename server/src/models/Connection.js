@@ -17,6 +17,9 @@ const connectionSchema = new Schema(
     blockedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
     requestedAt: { type: Date, default: Date.now }, // lần gần nhất gửi yêu cầu (để đếm hạn mức tháng)
     respondedAt: { type: Date, default: null },
+    // Thông báo chấm đỏ: người nhận chưa xem yêu cầu mới / người gửi chưa xem phản hồi
+    unseenByReceiver: { type: Boolean, default: false },
+    unseenByRequester: { type: Boolean, default: false },
   },
   { timestamps: { createdAt: true, updatedAt: false }, collection: "connections" }
 );

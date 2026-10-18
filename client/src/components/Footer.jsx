@@ -42,7 +42,7 @@ export default function Footer() {
   const socials = COMPANY.socials.filter((s) => s.url);
 
   return (
-    <footer className="mt-16 border-t border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-950">
+    <footer className="mt-16 border-t border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-950 max-md:pb-[calc(3.5rem+env(safe-area-inset-bottom))]" >
       <div className={`${container} grid gap-10 py-5 sm:grid-cols-2 lg:grid-cols-4`}>
         <div>
           <Link to="/" className="mb-4 block text-xl font-bold leading-6 text-indigo-600 dark:text-indigo-400">

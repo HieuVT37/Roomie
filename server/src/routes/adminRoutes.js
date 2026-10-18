@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {
-  stats, listUsers, updateUser, grantPlan, listListings, moderate, listReports, handleReport,
+  stats, listUsers, updateUser, grantPlan, listListings, moderate, deleteListing, listReports, handleReport,
   listPlans, updatePlan, listFaqsAdmin, createFaq, updateFaq, deleteFaq,
 } from "../controllers/adminController.js";
 import { requireAuth, requireRole } from "../middlewares/auth.js";
@@ -20,6 +20,7 @@ router.post("/users/:id/plan", grantPlanRules, validate, grantPlan);
 
 router.get("/listings", listListings);
 router.patch("/listings/:kind/:id/moderation", moderationRules, validate, moderate);
+router.delete("/listings/:kind/:id", deleteListing);
 
 router.get("/reports", listReports);
 router.patch("/reports/:id", handleReportRules, validate, handleReport);

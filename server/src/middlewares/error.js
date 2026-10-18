@@ -21,6 +21,10 @@ export function errorHandler(err, req, res, next) {
           : "Không tải được ảnh";
   }
 
+  if (err.code === 121) {
+    // Lỗi "Document failed validation" từ validator của MongoDB: in rõ trường nào sai để dễ sửa
+    console.error("MongoDB validator từ chối:", err.message, JSON.stringify(err.errInfo?.details ?? null));
+  }
   if (status >= 500) console.error(err);
   res.status(status).json({ message, code: typeof err.code === "string" ? err.code : undefined });
 }

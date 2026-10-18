@@ -36,7 +36,8 @@ export async function ensurePlanFresh(user) {
     { $set: { status: "expired" } }
   );
   await User.updateOne({ _id: user._id }, { $set: { currentPlan: "basic" } });
-  user.currentPlan = "basic";
+  user.currentPlan = "basic";  await User.updateOne({ _id: userId }, { $set: { currentPlan: planCode } });
+  return sub;
   return user;
 }
 
@@ -65,6 +66,9 @@ export async function activatePlan(userId, planCode, days = PLAN_DAYS) {
     });
   }
 
-  await User.updateOne({ _id: userId }, { $set: { currentPlan: planCode } });
+  // Gói Pro tự động có quyền chủ trọ, không cần admin cấp thủ công
+  const update = { currentPlan: planCode };
+  if (planCode === "pro") update.isLandlord = true;
+  await User.updateOne({ _id: userId }, { $set: update });
   return sub;
 }

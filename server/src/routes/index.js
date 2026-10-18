@@ -11,6 +11,7 @@ import uploadRoutes from "./uploadRoutes.js";
 import billingRoutes from "./billingRoutes.js";
 import supportRoutes from "./supportRoutes.js";
 import adminRoutes from "./adminRoutes.js";
+import notificationRoutes from "./notificationRoutes.js";
 
 const router = Router();
 
@@ -30,5 +31,6 @@ router.use("/uploads", uploadRoutes);
 router.use("/billing", billingRoutes);
 router.use("/support", supportRoutes);
 router.use("/admin", adminRoutes);
+router.use("/notifications", notificationRoutes);
 
 export default router;

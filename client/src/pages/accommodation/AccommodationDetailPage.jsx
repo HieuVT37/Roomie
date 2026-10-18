@@ -7,6 +7,7 @@ import FavoriteButton from "../../components/FavoriteButton";
 import ReportButton from "../../components/ReportButton";
 import BackButton from "../../components/BackButton";
 import usePageTitle from "../../hooks/usePageTitle";
+import MessageButton from "../../components/MessageButton";
 import { ROOM_TYPE_LABELS, LISTING_STATUS_LABELS, MODERATION_LABELS, formatVND } from "../../utils/labels";
 
 function Row({ label, value }) {
@@ -99,7 +100,7 @@ export default function AccommodationDetailPage() {
 
       {isOwner && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-indigo-50 px-4 py-3 text-sm dark:bg-indigo-950">
-          <span>Đây là tin của bạn · {MODERATION_LABELS[l.moderationStatus]} · {l.viewCount} lượt xem</span>
+          <span>Đây là tin của bạn · {MODERATION_LABELS[l.moderationStatus]} · {l.viewCount} lượt xem{l.moderationStatus === "pending" && " · Tin sẽ hiển thị công khai sau khi admin duyệt"}</span>
           <Link to={`/accommodation/${l.id}/edit`} className="rounded-lg bg-indigo-600 px-3 py-1 text-white">Chỉnh sửa</Link>
         </div>
       )}
@@ -167,7 +168,8 @@ export default function AccommodationDetailPage() {
               Đăng nhập để xem liên hệ
             </Link>
           )}
-            {user && !isOwner && user.role !== "admin" && <ReportButton targetType="accommodation" targetId={l.id} fullWidth />}
+          {user && !isOwner && user.role !== "admin" && <MessageButton userId={owner.userId} />}
+          {user && !isOwner && user.role !== "admin" && <ReportButton targetType="accommodation" targetId={l.id} fullWidth />}
         </aside>
       </div>
     </div>

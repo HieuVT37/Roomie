@@ -9,6 +9,8 @@ import Connection from "../models/Connection.js";
 import Payment from "../models/Payment.js";
 import Report from "../models/Report.js";
 import Faq from "../models/Faq.js";
+import Favorite from "../models/Favorite.js";
+import StoredFile from "../models/StoredFile.js";
 import { activatePlan, PLAN_RANK } from "../services/billingService.js";
 import { httpError, asyncHandler } from "../utils/httpError.js";
 import { str, escapeRegex } from "../utils/query.js";
@@ -236,6 +238,26 @@ export const moderate = asyncHandler(async (req, res) => {
   if (!listing) throw httpError(404, "Không tìm thấy tin");
 
   res.json({ id: listing._id, moderationStatus: listing.moderationStatus, moderationNote: listing.moderationNote });
+});
+
+// Xóa hẳn tin (kể cả tin đã duyệt): gỡ luôn yêu thích và ảnh đã tải lên của tin đó
+export const deleteListing = asyncHandler(async (req, res) => {
+  const Model = LISTING_MODELS[req.params.kind];
+  if (!Model) throw httpError(404, "Loại tin không hợp lệ");
+  checkId(req.params.id, "Không tìm thấy tin");
+
+  const listing = await Model.findByIdAndDelete(req.params.id).select("images").lean();
+  if (!listing) throw httpError(404, "Không tìm thấy tin");
+
+  const fileIds = (listing.images || [])
+    .map((url) => /^\/uploads\/([0-9a-f]{24})\.webp$/.exec(url)?.[1])
+    .filter(Boolean);
+  await Promise.all([
+    Favorite.deleteMany({ targetType: req.params.kind, targetId: listing._id }),
+    fileIds.length ? StoredFile.deleteMany({ _id: { $in: fileIds }, kind: "public" }) : null,
+  ]);
+
+  res.json({ ok: true });
 });
 
 /* ---------------- Báo cáo vi phạm ---------------- */

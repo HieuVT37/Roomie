@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { adminListingsApi, adminModerateApi } from "../../api/admin";
+import { adminListingsApi, adminModerateApi, adminDeleteListingApi } from "../../api/admin";
 import FormField from "../../components/FormField";
 import Pagination from "../../components/Pagination";
 import { MODERATION_LABELS, PASS_TYPE_LABELS, LISTING_STATUS_LABELS, PASS_STATUS_LABELS, passPriceText, formatVND } from "../../utils/labels";
@@ -16,7 +16,7 @@ const STATE_COLOR = {
 
 export default function AdminModerationPage() {
   const [kind, setKind] = useState("accommodation");
-  const [moderation, setModeration] = useState("pending");
+  const [moderation, setModeration] = useState("");
   const [qDraft, setQDraft] = useState("");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
@@ -148,8 +148,15 @@ export default function AdminModerationPage() {
                   )}
                   {it.moderationStatus !== "rejected" && (
                     <button onClick={() => setRejecting({ id: it.id, note: "" })}
-                      className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-600 dark:border-red-800">Từ chối</button>
+                      className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-600 dark:border-red-800">
+                      {it.moderationStatus === "approved" ? "Gỡ tin (từ chối)" : "Từ chối"}
+                    </button>
                   )}
+                  <button
+                    onClick={() => window.confirm(`Xóa vĩnh viễn tin "${it.title}"? Không thể khôi phục.`) && act(() => adminDeleteListingApi(it.kind, it.id))}
+                    className="rounded-lg bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700 sm:ml-auto">
+                    Xóa tin
+                  </button>
                 </div>
               )}
             </li>

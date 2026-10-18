@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {
-  sendRequest, listConnections, summary, accept, reject, cancel, disconnect, block, unblock,
+  sendRequest, listConnections, summary, accept, reject, cancel, disconnect, block, unblock, markSeen,
 } from "../controllers/connectionController.js";
 import { requireAuth } from "../middlewares/auth.js";
 import { validate } from "../middlewares/validate.js";
@@ -11,6 +11,7 @@ router.use(requireAuth);
 
 router.get("/", listConnections);
 router.get("/summary", summary);
+router.post("/seen", markSeen);
 router.post("/", sendRequestRules, validate, sendRequest);
 
 router.patch("/:id/accept", accept);

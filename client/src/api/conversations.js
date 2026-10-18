@@ -15,3 +15,4 @@ export const sendMessageApi = (id, text, files = []) => {
   }
   return api.post(`/conversations/${id}/messages`, { text }).then(d);
 };
+export const startConversationApi = (userId) => api.post("/conversations/start", { userId }).then(d);

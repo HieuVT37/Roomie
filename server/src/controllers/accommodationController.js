@@ -76,7 +76,8 @@ async function assertCanPost(user) {
   }
 }
 
-const initialModeration = () => (process.env.AUTO_APPROVE_LISTINGS === "false" ? "pending" : "approved");
+// Mọi tin mới đều phải chờ admin duyệt mới hiển thị công khai
+const initialModeration = () => "pending";
 
 const pick = (obj, keys) => Object.fromEntries(keys.map((k) => [k, obj[k]]));
 
@@ -204,7 +205,8 @@ export const updateAccommodation = asyncHandler(async (req, res) => {
 
   // PUT thay thế toàn bộ: trường nào không gửi lên thì bị xóa (ví dụ bỏ trống tiền cọc)
   for (const key of FIELDS) listing.set(key, req.body[key]);
-  if (process.env.AUTO_APPROVE_LISTINGS === "false") listing.moderationStatus = "pending"; // sửa tin thì phải duyệt lại
+  listing.moderationStatus = "pending"; // sửa tin thì phải duyệt lại
+  listing.moderationNote = "";
   await listing.save();
 
   res.json({ listing: toDto(listing.toObject()) });

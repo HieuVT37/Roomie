@@ -7,6 +7,7 @@ import ConnectPanel from "../../components/ConnectPanel";
 import Lightbox from "../../components/Lightbox";
 import ReportButton from "../../components/ReportButton";
 import ScoreBadge from "../../components/ScoreBadge";
+import usePageTitle from "../../hooks/usePageTitle";
 import {
   CRITERIA_LABELS, GENDER_LABELS, GUEST_LABELS, SHARED_LABELS, PATTERN_LABELS, formatBudget,
 } from "../../utils/labels";
@@ -62,6 +63,8 @@ export default function MatchDetailPage() {
       active = false;
     };
   }, [userId]);
+
+  usePageTitle(data?.profile?.displayName);
 
   if (error) {
     return (

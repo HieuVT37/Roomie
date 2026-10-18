@@ -6,6 +6,7 @@ import Avatar from "../../components/Avatar";
 import FavoriteButton from "../../components/FavoriteButton";
 import ReportButton from "../../components/ReportButton";
 import BackButton from "../../components/BackButton";
+import usePageTitle from "../../hooks/usePageTitle";
 import { ROOM_TYPE_LABELS, LISTING_STATUS_LABELS, MODERATION_LABELS, formatVND } from "../../utils/labels";
 
 function Row({ label, value }) {
@@ -34,6 +35,8 @@ export default function AccommodationDetailPage() {
       active = false;
     };
   }, [id]);
+
+  usePageTitle(data?.listing?.title);
 
   if (error) {
     return (

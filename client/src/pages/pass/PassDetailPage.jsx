@@ -6,6 +6,7 @@ import Avatar from "../../components/Avatar";
 import ReportButton from "../../components/ReportButton";
 import BackButton from "../../components/BackButton";
 import FavoriteButton from "../../components/FavoriteButton";
+import usePageTitle from "../../hooks/usePageTitle";
 import {
   PASS_TYPE_LABELS, PASS_STATUS_LABELS, MODERATION_LABELS, ITEM_CATEGORY_LABELS,
   CONDITION_LABELS, DEAL_LABELS, passPriceText, formatVND,
@@ -37,6 +38,8 @@ export default function PassDetailPage() {
       active = false;
     };
   }, [id]);
+
+  usePageTitle(data?.listing?.title);
 
   if (error) {
     return (

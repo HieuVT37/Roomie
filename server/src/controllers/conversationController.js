@@ -3,11 +3,13 @@ import Conversation from "../models/Conversation.js";
 import Message from "../models/Message.js";
 import Connection from "../models/Connection.js";
 import Profile from "../models/Profile.js";
-import { CHAT_DIR } from "../config/paths.js";
+import StoredFile from "../models/StoredFile.js";
+import { processImage } from "../services/imageService.js";
 import { httpError, asyncHandler } from "../utils/httpError.js";
 
 const IMAGE_PREVIEW_TEXT = "📷 Đã gửi ảnh";
-const FILE_RE = /^[0-9a-f-]{36}\.(jpg|png|webp)$/;
+const FILE_RE = /^[0-9a-f]{24}\.webp$/;
+const MAX_CHAT_FILES_PER_USER = 200;
 
 async function loadMine(id, me) {
   if (!mongoose.isValidObjectId(id)) throw httpError(404, "Không tìm thấy cuộc trò chuyện");
@@ -118,13 +120,35 @@ export const sendMessage = asyncHandler(async (req, res) => {
     throw httpError(403, "Hai bạn chưa kết nối hoặc kết nối đã bị hủy nên không thể nhắn tin");
   }
 
-  const message = await Message.create({
-    conversationId: conv._id,
-    senderId: me,
-    text,
-    images: files.map((f) => f.filename),
-    readBy: [me],
-  });
+  const stored = [];
+  let message;
+  try {
+    if (files.length) {
+      const used = await StoredFile.countDocuments({ ownerId: me, kind: "chat" });
+      if (used + files.length > MAX_CHAT_FILES_PER_USER) {
+        throw httpError(403, "Bạn đã gửi quá nhiều ảnh, không thể gửi thêm");
+      }
+      for (const f of files) {
+        const { data, size } = await processImage(f.buffer);
+        stored.push({
+          _id: new mongoose.Types.ObjectId(), kind: "chat", ownerId: me,
+          conversationId: conv._id, contentType: "image/webp", size, data,
+        });
+      }
+      await StoredFile.insertMany(stored);
+    }
+    message = await Message.create({
+      conversationId: conv._id,
+      senderId: me,
+      text,
+      images: stored.map((s) => `${s._id}.webp`),
+      readBy: [me],
+    });
+  } catch (err) {
+    // Gửi lỗi thì xóa ảnh vừa lưu, không để ảnh mồ côi
+    if (stored.length) await StoredFile.deleteMany({ _id: { $in: stored.map((s) => s._id) } }).catch(() => {});
+    throw err;
+  }
 
   conv.lastMessage = { senderId: me, text: (text || IMAGE_PREVIEW_TEXT).slice(0, 200), sentAt: message.createdAt };
   await conv.save();
@@ -133,17 +157,23 @@ export const sendMessage = asyncHandler(async (req, res) => {
 });
 
 // Chỉ hai người trong cuộc trò chuyện mới xem được ảnh, và ảnh phải thật sự thuộc cuộc trò chuyện đó
-export const getMessageImage = asyncHandler(async (req, res, next) => {
+// Chỉ hai người trong cuộc trò chuyện mới xem được ảnh, và ảnh phải thuộc đúng cuộc trò chuyện đó
+export const getMessageImage = asyncHandler(async (req, res) => {
   const conv = await loadMine(req.params.id, req.user);
   const { filename } = req.params;
-
   if (!FILE_RE.test(filename)) throw httpError(404, "Không tìm thấy ảnh");
-  if (!(await Message.exists({ conversationId: conv._id, images: filename }))) {
-    throw httpError(404, "Không tìm thấy ảnh");
-  }
 
-  res.set("Cache-Control", "private, max-age=86400");
-  res.sendFile(filename, { root: CHAT_DIR }, (err) => {
-    if (err && !res.headersSent) next(httpError(404, "Không tìm thấy ảnh"));
+  const file = await StoredFile.findOne({
+    _id: filename.slice(0, 24),
+    kind: "chat",
+    conversationId: conv._id,
+  }).select("data contentType");
+  if (!file) throw httpError(404, "Không tìm thấy ảnh");
+
+  res.set({
+    "Content-Type": file.contentType,
+    "Cache-Control": "private, max-age=86400",
+    "X-Content-Type-Options": "nosniff",
   });
+  res.send(file.data);
 });

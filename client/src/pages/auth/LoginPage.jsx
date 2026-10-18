@@ -48,11 +48,6 @@ export default function LoginPage() {
         Chưa có tài khoản?{" "}
         <Link to="/register" className="text-indigo-600 hover:underline dark:text-indigo-400">Đăng ký</Link>
       </p>
-
-      {/* Chỉ để thử trong giai đoạn phát triển, xóa khi nộp bài */}
-      <p className="mt-6 rounded-lg bg-gray-100 p-3 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-        Tài khoản thử: linh.nguyen@example.com / Roomie@123
-      </p>
     </div>
   );
 }

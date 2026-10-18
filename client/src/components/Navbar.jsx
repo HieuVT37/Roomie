@@ -125,7 +125,7 @@ export default function Navbar() {
         className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden dark:border-gray-700 dark:bg-gray-900/95"
       >
         <ul className="flex flex-wrap justify-center px-1 py-1">
-          {renderItems(barItemClass, "basis-1/5")}
+          {renderItems(barItemClass, "basis-1/4")}
         </ul>
       </nav>
     </>

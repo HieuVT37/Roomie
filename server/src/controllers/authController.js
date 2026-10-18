@@ -31,8 +31,9 @@ export const register = asyncHandler(async (req, res) => {
     startedAt: new Date(),
   });
 
-  setAuthCookie(res, signToken(user._id));
-  res.status(201).json({ user: publicUser(user), profile });
+  const token = signToken(user._id);
+  setAuthCookie(res, token);
+  res.status(201).json({ user: publicUser(user), profile, token });
 });
 
 export const login = asyncHandler(async (req, res) => {
@@ -47,8 +48,9 @@ export const login = asyncHandler(async (req, res) => {
   await user.save();
 
   const profile = await Profile.findOne({ userId: user._id });
-  setAuthCookie(res, signToken(user._id));
-  res.json({ user: publicUser(user), profile });
+  const token = signToken(user._id);
+  setAuthCookie(res, token);
+  res.json({ user: publicUser(user), profile, token });
 });
 
 export const logout = (req, res) => {

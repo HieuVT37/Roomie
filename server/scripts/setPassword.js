@@ -3,6 +3,8 @@ import crypto from "node:crypto";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import User from "../src/models/User.js";
+import dns from "node:dns";
+dns.setServers(["8.8.8.8", "1.1.1.1", "0.0.0.0"]);
 
 const [, , first, second] = process.argv;
 

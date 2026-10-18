@@ -24,7 +24,7 @@ export default function HelpPage() {
     .filter((g) => g.list.length > 0);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-4xl space-y-8">
       <div>
         <h1 className="text-3xl font-bold">Hỗ trợ</h1>
         <p className="mt-2 text-gray-500 dark:text-gray-400">Các câu hỏi thường gặp khi sử dụng Roomie</p>

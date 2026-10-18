@@ -86,7 +86,7 @@ export default function MatchDetailPage() {
   const photos = p.roomPhotos || [];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       <BackButton to="/matching" />
 
       <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-gray-200 p-5 dark:border-gray-700">

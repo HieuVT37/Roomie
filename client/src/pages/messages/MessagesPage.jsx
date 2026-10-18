@@ -230,7 +230,7 @@ export default function MessagesPage() {
   const active = convs.find((c) => c.id === conversationId);
 
   return (
-    <div className="mx-auto grid h-[70vh] max-w-5xl overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 md:grid-cols-[280px_1fr]">
+    <div className="mx-auto grid h-[70vh] max-w-6xl overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 md:grid-cols-[280px_1fr]">
       {/* Danh sách hội thoại */}
       <aside className="overflow-y-auto border-b border-gray-200 dark:border-gray-700 md:border-b-0 md:border-r">
         <h2 className="px-4 py-3 font-semibold">Tin nhắn</h2>

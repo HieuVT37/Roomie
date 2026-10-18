@@ -156,7 +156,7 @@ export default function ProfilePage() {
   if (loading) return <p>Đang tải hồ sơ...</p>;
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto max-w-3xl space-y-6">
+    <form onSubmit={handleSubmit} className="mx-auto max-w-4xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Hồ sơ của tôi</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">

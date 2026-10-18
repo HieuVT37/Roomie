@@ -46,7 +46,7 @@ export default function BillingPage() {
   const { plan, subscription, limits, usage, payments } = data;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       <h1 className="text-2xl font-bold">Gói dịch vụ của tôi</h1>
 
       <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gray-200 p-5 dark:border-gray-700">

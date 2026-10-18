@@ -14,7 +14,7 @@ const SUPPORT = [
 ];
 
 // Mọi khối dùng chung các lớp này để khoảng cách luôn đều nhau
-const container = "mx-auto w-full max-w-6xl";
+const container = "mx-auto w-full max-w-[75rem] px-6";
 const listClass = "space-y-1 text-sm leading-6";
 const linkClass = "text-gray-600 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400";
 const titleClass = "mb-4 text-sm font-semibold uppercase leading-6 tracking-wide";

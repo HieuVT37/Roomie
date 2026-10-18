@@ -7,6 +7,7 @@ import { httpError, asyncHandler } from "../utils/httpError.js";
 import MatchView from "../models/MatchView.js";
 import { getPlanLimits } from "../services/planService.js";
 import { todayKey } from "../services/billingService.js";
+import { str } from "../utils/query.js";
 
 const visible = (p, key) => p.visibility?.[key] !== false;
 
@@ -60,6 +61,7 @@ export const listMatches = asyncHandler(async (req, res) => {
   const minScore = Number(req.query.minScore) || 0;
   const location = String(req.query.location || "").trim().toLowerCase();
   const gender = req.query.gender || "";
+  const q = str(req.query.q).slice(0, 100).normalize("NFC").toLowerCase();
   const includeIncompatible = req.query.includeIncompatible === "true";
 
   const candidates = await Profile.find({
@@ -87,6 +89,7 @@ export const listMatches = asyncHandler(async (req, res) => {
     if (missingForMatching(c).length) continue;
     if (gender && c.gender !== gender) continue;
     if (location && !c.preferences.locations.some((l) => l.toLowerCase().includes(location))) continue;
+    if (q && !(c.bio || "").normalize("NFC").toLowerCase().includes(q)) continue;
 
     const relation = relationFor(relations, c.userId);
     if (relation.status === "blocked_by_me" || relation.status === "blocked_me") continue;

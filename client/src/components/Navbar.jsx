@@ -18,7 +18,8 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-gray-200 bg-white/90 px-6 py-4 backdrop-blur dark:border-gray-700 dark:bg-gray-900/90">
+      <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/90 px-6 py-4 backdrop-blur dark:border-gray-700 dark:bg-gray-900/90">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2">
       <Link to="/" className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
         Roomie
       </Link>
@@ -75,6 +76,7 @@ export default function Navbar() {
             </Link>
           </>
         )}
+      </div>
       </div>
     </header>
   );

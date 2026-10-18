@@ -59,6 +59,7 @@ const profileSchema = new Schema(
       budget: { type: Boolean, default: true },
       schedule: { type: Boolean, default: true },
       interests: { type: Boolean, default: true },
+      roomPhotos: { type: Boolean, default: true },
     },
     preferences: { type: preferencesSchema },
   },

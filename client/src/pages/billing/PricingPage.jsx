@@ -58,7 +58,7 @@ export default function PricingPage() {
   const currentPlan = user?.currentPlan;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
+    <div className="mx-auto max-w-6xl space-y-8">
       <div className="text-center">
         <h1 className="text-3xl font-bold">Gói dịch vụ</h1>
         <p className="mt-2 text-gray-500 dark:text-gray-400">Chọn gói phù hợp với nhu cầu tìm bạn cùng phòng của bạn</p>

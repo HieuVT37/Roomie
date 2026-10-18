@@ -3,10 +3,10 @@ import { Link } from "react-router-dom";
 import { listMatchesApi } from "../../api/matching";
 import ProfileCard from "../../components/ProfileCard";
 import FormField from "../../components/FormField";
-import { SelectField, CheckField } from "../../components/FormControls";
+import { SelectField } from "../../components/FormControls";
 import { GENDER_LABELS, toOptions } from "../../utils/labels";
 
-const initialFilters = { minScore: "0", location: "", gender: "", includeIncompatible: false };
+const initialFilters = { q: "", location: "", gender: "", minScore: "0" };
 
 export default function MatchingPage() {
   const [draft, setDraft] = useState(initialFilters);
@@ -23,10 +23,10 @@ export default function MatchingPage() {
     listMatchesApi({
       page,
       limit: 12,
-      minScore: filters.minScore,
+      q: filters.q,
       location: filters.location,
       gender: filters.gender,
-      includeIncompatible: filters.includeIncompatible,
+      minScore: filters.minScore,
     })
       .then((res) => active && setData(res))
       .catch((err) =>
@@ -42,16 +42,25 @@ export default function MatchingPage() {
     };
   }, [page, filters]);
 
+  const set = (name, value) => setDraft((d) => ({ ...d, [name]: value }));
+  const onText = (e) => set(e.target.name, e.target.value);
+
   const applyFilters = (e) => {
     e.preventDefault();
     setPage(1);
     setFilters(draft);
   };
 
+  const reset = () => {
+    setDraft(initialFilters);
+    setFilters(initialFilters);
+    setPage(1);
+  };
+
   const needProfile = error?.code === "PROFILE_INCOMPLETE" || error?.code === "NOT_LOOKING";
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Gợi ý bạn cùng phòng</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -59,18 +68,30 @@ export default function MatchingPage() {
         </p>
       </div>
 
-      <form onSubmit={applyFilters} className="grid items-end gap-4 rounded-2xl border border-gray-200 p-4 dark:border-gray-700 sm:grid-cols-4">
-        <SelectField label="Điểm tối thiểu" id="minScore" value={draft.minScore}
-          onChange={(e) => setDraft({ ...draft, minScore: e.target.value })}
-          options={[{ value: "0", label: "Tất cả" }, { value: "50", label: "Từ 50%" }, { value: "70", label: "Từ 70%" }, { value: "80", label: "Từ 80%" }]} />
-        <FormField label="Khu vực" id="location" value={draft.location} placeholder="Cầu Giấy"
-          onChange={(e) => setDraft({ ...draft, location: e.target.value })} />
-        <SelectField label="Giới tính" id="gender" value={draft.gender} placeholder="Tất cả"
-          onChange={(e) => setDraft({ ...draft, gender: e.target.value })} options={toOptions(GENDER_LABELS)} />
-        <button type="submit" className="rounded-lg bg-indigo-600 py-2 font-medium text-white hover:bg-indigo-700">Lọc</button>
-        <div className="sm:col-span-4">
-          <CheckField id="incompat" label="Hiện cả hồ sơ không đạt tiêu chí bắt buộc"
-            checked={draft.includeIncompatible} onChange={(v) => setDraft({ ...draft, includeIncompatible: v })} />
+      <form onSubmit={applyFilters} className="space-y-4 rounded-2xl border border-gray-200 p-4 dark:border-gray-700">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <FormField label="Mô tả" id="q" value={draft.q} onChange={onText}
+            placeholder="Mô tả bản thân" maxLength={100} />
+          <FormField label="Khu vực" id="location" value={draft.location} onChange={onText}
+            placeholder="Cầu Giấy" />
+          <SelectField label="Giới tính" id="gender" value={draft.gender} onChange={onText}
+            placeholder="Tất cả" options={toOptions(GENDER_LABELS)} />
+          <SelectField label="Điểm tối thiểu" id="minScore" value={draft.minScore} onChange={onText}
+            options={[
+              { value: "0", label: "Tất cả" },
+              { value: "50", label: "Từ 50%" },
+              { value: "70", label: "Từ 70%" },
+              { value: "80", label: "Từ 80%" },
+            ]} />
+        </div>
+
+        <div className="flex gap-3">
+          <button type="submit" className="rounded-lg bg-indigo-600 px-5 py-2 font-medium text-white hover:bg-indigo-700">
+            Tìm kiếm
+          </button>
+          <button type="button" onClick={reset} className="rounded-lg border border-gray-300 px-5 py-2 dark:border-gray-600">
+            Xóa bộ lọc
+          </button>
         </div>
       </form>
 
@@ -91,7 +112,7 @@ export default function MatchingPage() {
         <>
           <p className="text-sm text-gray-500 dark:text-gray-400">{data.total} kết quả</p>
           {data.items.length === 0 ? (
-            <p>Chưa có hồ sơ nào phù hợp. Thử giảm điểm tối thiểu hoặc bỏ bộ lọc.</p>
+            <p>Không có hồ sơ nào phù hợp với bộ lọc.</p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {data.items.map((item) => (

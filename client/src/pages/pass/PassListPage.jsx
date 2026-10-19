@@ -5,6 +5,7 @@ import { listPassApi } from "../../api/pass";
 import PassCard from "../../components/PassCard";
 import FormField from "../../components/FormField";
 import { SelectField } from "../../components/FormControls";
+import { useRestoreLastViewed, useReturnState } from "../../utils/lastViewed";
 import {
   PASS_TYPE_LABELS, ITEM_CATEGORY_LABELS, CONDITION_LABELS, DEAL_LABELS, toOptions,
 } from "../../utils/labels";
@@ -21,9 +22,9 @@ const TABS = [
 
 export default function PassListPage() {
   const { user } = useAuth();
-  const [draft, setDraft] = useState(initialFilters);
-  const [filters, setFilters] = useState(initialFilters);
-  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useReturnState("pass:filters", initialFilters);
+  const [page, setPage] = useReturnState("pass:page", 1);
+  const [draft, setDraft] = useState(filters);
   const [data, setData] = useState({ items: [], total: 0, pages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -63,6 +64,8 @@ export default function PassListPage() {
   };
 
   const showItemFilters = draft.type !== "room";
+
+  useRestoreLastViewed(!loading);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">

@@ -1,7 +1,8 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigationType } from "react-router-dom";
 import Avatar from "./Avatar";
 import ScoreBadge from "./ScoreBadge";
 import { GENDER_LABELS, formatBudget } from "../utils/labels";
+import { saveLastViewed, readLastViewed, isReturningTo } from "../utils/lastViewed";
 
 const RELATION_TEXT = {
   sent: "Đã gửi yêu cầu",
@@ -10,6 +11,11 @@ const RELATION_TEXT = {
 };
 
 export default function ProfileCard({ item }) {
+  const { pathname, search } = useLocation();
+  const navType = useNavigationType();
+  const isLastViewed =
+    isReturningTo(pathname + search, navType) && readLastViewed()?.id === String(item.userId);
+
   const sub = [item.age && `${item.age} tuổi`, GENDER_LABELS[item.gender], item.school || item.occupation]
     .filter(Boolean)
     .join(" · ");
@@ -17,8 +23,15 @@ export default function ProfileCard({ item }) {
   return (
     <Link
       to={`/matching/${item.userId}`}
-      className="block rounded-2xl border border-gray-200 p-4 transition hover:shadow-md dark:border-gray-700"
+      data-card-id={item.userId}
+      onClick={() => saveLastViewed(item.userId)}
+      className={`block rounded-2xl border p-4 transition hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+        isLastViewed
+          ? "border-indigo-400 shadow-[0_0_0_3px_rgba(129,140,248,0.25),0_0_18px_rgba(129,140,248,0.45)]"
+          : "border-gray-200 dark:border-gray-700"
+      }`}
     >
+      {/* toàn bộ nội dung bên trong giữ nguyên */}
       <div className="flex items-start gap-3">
         <Avatar src={item.avatarUrl} name={item.displayName} />
         <div className="min-w-0 flex-1">

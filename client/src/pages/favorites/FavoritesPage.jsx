@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { listFavoritesApi } from "../../api/favorites";
 import AccommodationCard from "../../components/AccommodationCard";
 import PassCard from "../../components/PassCard";
+import { useRestoreLastViewed, useReturnState } from "../../utils/lastViewed";
 
 const TABS = [
   { value: "accommodation", label: "Phòng trọ", link: "/accommodation" },
@@ -10,7 +11,7 @@ const TABS = [
 ];
 
 export default function FavoritesPage() {
-  const [tab, setTab] = useState("accommodation");
+  const [tab, setTab] = useReturnState("favorites:tab", "accommodation");
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -33,6 +34,7 @@ export default function FavoritesPage() {
     if (!isFav) setItems((list) => list.filter((i) => i.id !== id));
   };
 
+  useRestoreLastViewed(!loading);
   const current = TABS.find((t) => t.value === tab);
   const Card = tab === "pass" ? PassCard : AccommodationCard;
 

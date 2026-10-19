@@ -3,12 +3,14 @@ import { Link } from "react-router-dom";
 import { myAccommodationsApi, setAccommodationStatusApi, deleteAccommodationApi } from "../../api/accommodations";
 import AccommodationCard from "../../components/AccommodationCard";
 import { LISTING_STATUS_LABELS, MODERATION_LABELS, toOptions } from "../../utils/labels";
+import { useRestoreLastViewed } from "../../utils/lastViewed";
 
 export default function MyListingsPage() {
   const [data, setData] = useState({ items: [], quota: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  useRestoreLastViewed(!loading);
 
   useEffect(() => {
     let active = true;

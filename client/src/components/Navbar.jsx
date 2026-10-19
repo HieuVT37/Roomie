@@ -5,7 +5,6 @@ import { useNotifications } from "../context/NotificationContext";
 import { PLAN_LABELS } from "../utils/labels";
 import CountBadge from "./CountBadge";
 import Avatar from "./Avatar";
-import useViewportBottom from "../hooks/useViewportBottom";
 
 const linkClass = ({ isActive }) =>
   isActive ? "font-semibold text-indigo-600 dark:text-indigo-400" : "hover:text-indigo-600 dark:hover:text-indigo-400";
@@ -15,7 +14,6 @@ const rowItemClass = (state) => `${linkClass(state)} block whitespace-nowrap py-
 const barItemClass = (state) => `${linkClass(state)} block px-1 py-2.5 text-center text-base leading-tight`;
 
 export default function Navbar() {
-  useViewportBottom();
   const { user, profile, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -63,8 +61,7 @@ export default function Navbar() {
           </Link>
 
           {/* Menu: ẩn ở điện thoại; 768px–1279px nằm ở hàng thứ hai; từ 1280px nằm cùng một dòng giữa logo và Đăng xuất */}
-          <nav aria-label="Menu chính (điện thoại)" style={{ bottom: "var(--vv-bottom, 0px)" }}
-            className="fixed inset-x-0 z-50 border-t border-gray-200 bg-white md:hidden dark:border-gray-700 dark:bg-gray-900">
+          <nav aria-label="Menu chính" className="order-3 hidden w-full md:block xl:order-2 xl:w-auto xl:flex-1">
             <ul className="flex w-full items-center justify-between xl:justify-evenly xl:gap-x-2">
               {renderItems(rowItemClass, "shrink-0")}
             </ul>

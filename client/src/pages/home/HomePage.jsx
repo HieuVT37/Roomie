@@ -5,6 +5,7 @@ import { listAccommodationsApi } from "../../api/accommodations";
 import { listPassApi } from "../../api/pass";
 import AccommodationCard from "../../components/AccommodationCard";
 import PassCard from "../../components/PassCard";
+import { useRestoreLastViewed } from "../../utils/lastViewed";
 
 const FEATURES = [
   { icon: "🤝", title: "Matching bạn cùng phòng", desc: "So khớp ngân sách, giờ giấc, mức sạch sẽ và lối sống để ra tỷ lệ tương thích.", to: "/matching" },
@@ -62,6 +63,7 @@ export default function HomePage() {
   const { user, profile, loading } = useAuth();
   const [rooms, setRooms] = useState([]);
   const [passes, setPasses] = useState([]);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -72,11 +74,14 @@ export default function HomePage() {
       if (!active) return;
       if (acc.status === "fulfilled") setRooms(acc.value.items);
       if (pass.status === "fulfilled") setPasses(pass.value.items);
+      setLoaded(true);
     });
     return () => {
       active = false;
     };
   }, []);
+
+  useRestoreLastViewed(loaded);
 
   const needProfile = user && user.role !== "admin" && !profile?.isLookingForRoommate;
 

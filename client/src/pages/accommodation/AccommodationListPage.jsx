@@ -6,6 +6,7 @@ import AccommodationCard from "../../components/AccommodationCard";
 import FormField from "../../components/FormField";
 import { SelectField } from "../../components/FormControls";
 import { AMENITIES, ROOM_TYPE_LABELS, toOptions } from "../../utils/labels";
+import { useRestoreLastViewed, useReturnState } from "../../utils/lastViewed";
 
 const initialFilters = {
   q: "", district: "", roomType: "", minPrice: "", maxPrice: "", minArea: "", amenities: [], sort: "newest",
@@ -13,9 +14,9 @@ const initialFilters = {
 
 export default function AccommodationListPage() {
   const { user } = useAuth();
-  const [draft, setDraft] = useState(initialFilters);
-  const [filters, setFilters] = useState(initialFilters);
-  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useReturnState("accommodation:filters", initialFilters);
+  const [page, setPage] = useReturnState("accommodation:page", 1);
+  const [draft, setDraft] = useState(filters);
   const [data, setData] = useState({ items: [], total: 0, pages: 1 });
   const [districts, setDistricts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,6 +60,8 @@ export default function AccommodationListPage() {
     setPage(1);
   };
 
+  useRestoreLastViewed(!loading);
+  
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">

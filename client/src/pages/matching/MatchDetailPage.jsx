@@ -8,6 +8,7 @@ import Lightbox from "../../components/Lightbox";
 import ReportButton from "../../components/ReportButton";
 import ScoreBadge from "../../components/ScoreBadge";
 import usePageTitle from "../../hooks/usePageTitle";
+import ImageFrame from "../../components/ImageFrame";
 import {
   CRITERIA_LABELS, GENDER_LABELS, GUEST_LABELS, SHARED_LABELS, PATTERN_LABELS, formatBudget,
 } from "../../utils/labels";
@@ -120,9 +121,10 @@ export default function MatchDetailPage() {
                 type="button"
                 key={url}
                 onClick={() => setViewer({ images: photos, index: i })}
-                className="aspect-[4/3] overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800"
+                aria-label={`Xem ảnh phòng ${i + 1}`}
+                className="block overflow-hidden rounded-xl"
               >
-                <img src={url} alt={`Ảnh phòng ${i + 1}`} loading="lazy" className="h-full w-full object-cover transition hover:scale-105" />
+                <ImageFrame src={url} alt={`Ảnh phòng ${i + 1}`} fallback="🏠" />
               </button>
             ))}
           </div>

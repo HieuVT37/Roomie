@@ -8,6 +8,8 @@ import BackButton from "../../components/BackButton";
 import FavoriteButton from "../../components/FavoriteButton";
 import usePageTitle from "../../hooks/usePageTitle";
 import MessageButton from "../../components/MessageButton";
+import ImageFrame from "../../components/ImageFrame";
+import Lightbox from "../../components/Lightbox";
 import {
   PASS_TYPE_LABELS, PASS_STATUS_LABELS, MODERATION_LABELS, ITEM_CATEGORY_LABELS,
   CONDITION_LABELS, DEAL_LABELS, passPriceText, formatVND,
@@ -29,6 +31,7 @@ export default function PassDetailPage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [current, setCurrent] = useState(0);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -61,30 +64,21 @@ export default function PassDetailPage() {
     <div className="mx-auto max-w-4xl space-y-6">
       <BackButton to="/pass" />
 
-      <div className="space-y-2">
-        <div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-800">
-          {images.length ? (
-            <img src={images[current]} alt={l.title} className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full items-center justify-center text-6xl">{l.type === "room" ? "🏠" : "📦"}</div>
-          )}
-          {!isOwner && (
-            <div className="absolute right-3 top-3">
-              <FavoriteButton key={l.id} listingId={l.id} initial={data.isFavorite} targetType="pass" />
-            </div>
-          )}
-        </div>
-        {images.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto">
-            {images.map((url, i) => (
-              <button key={url} onClick={() => setCurrent(i)}
-                className={`h-16 w-24 shrink-0 overflow-hidden rounded-lg border-2 ${i === current ? "border-indigo-600" : "border-transparent"}`}>
-                <img src={url} alt="" className="h-full w-full object-cover" />
-              </button>
-            ))}
+      <ImageFrame
+        src={images[current]}
+        alt={l.title}
+        ratio="aspect-[4/3] sm:aspect-[16/9]"
+        className="rounded-2xl"
+        priority
+        fallback={l.type === "room" ? "🏠" : "📦"}
+        onClick={images.length ? () => setViewerOpen(true) : undefined}
+          />
+        {/* ... bộ đếm ảnh giống trên ... */}
+        {!isOwner && (
+          <div className="absolute right-3 top-3 z-10">
+            <FavoriteButton key={l.id} listingId={l.id} initial={data.isFavorite} targetType="pass" />
           </div>
         )}
-      </div>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>

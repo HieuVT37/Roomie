@@ -5,13 +5,14 @@ import ProfileCard from "../../components/ProfileCard";
 import FormField from "../../components/FormField";
 import { SelectField } from "../../components/FormControls";
 import { GENDER_LABELS, toOptions } from "../../utils/labels";
+import { useRestoreLastViewed, useReturnState } from "../../utils/lastViewed";
 
 const initialFilters = { q: "", location: "", gender: "", minScore: "0" };
 
 export default function MatchingPage() {
-  const [draft, setDraft] = useState(initialFilters);
-  const [filters, setFilters] = useState(initialFilters);
-  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useReturnState("matching:filters", initialFilters);
+  const [page, setPage] = useReturnState("matching:page", 1);
+  const [draft, setDraft] = useState(filters);
   const [data, setData] = useState({ items: [], total: 0, pages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -58,6 +59,8 @@ export default function MatchingPage() {
   };
 
   const needProfile = error?.code === "PROFILE_INCOMPLETE" || error?.code === "NOT_LOOKING";
+
+  useRestoreLastViewed(!loading && !error);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">

@@ -108,7 +108,7 @@ export default function AdminUsersPage() {
       {loading && <p>Đang tải...</p>}
 
       <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-700">
-        <table className="w-full text-left text-sm">
+        <table className="w-full whitespace-nowrap text-left text-sm">
           <thead className="bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
             <tr>
               <th className="px-4 py-3">Người dùng</th>
@@ -136,7 +136,7 @@ export default function AdminUsersPage() {
                     <span className="text-xs text-gray-400">Không thể thay đổi</span>
                   ) : (
                     <div className="space-y-2">
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-nowrap items-center gap-2">
                         <select
                           value={u.status}
                           onChange={(e) => changeStatus(u, e.target.value)}

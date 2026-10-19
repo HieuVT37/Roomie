@@ -8,8 +8,7 @@ import BackButton from "../../components/BackButton";
 import FavoriteButton from "../../components/FavoriteButton";
 import usePageTitle from "../../hooks/usePageTitle";
 import MessageButton from "../../components/MessageButton";
-import ImageFrame from "../../components/ImageFrame";
-import Lightbox from "../../components/Lightbox";
+import ImageGallery from "../../components/ImageGallery";
 import {
   PASS_TYPE_LABELS, PASS_STATUS_LABELS, MODERATION_LABELS, ITEM_CATEGORY_LABELS,
   CONDITION_LABELS, DEAL_LABELS, passPriceText, formatVND,
@@ -30,8 +29,6 @@ export default function PassDetailPage() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
-  const [current, setCurrent] = useState(0);
-  const [viewerOpen, setViewerOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -64,15 +61,10 @@ export default function PassDetailPage() {
     <div className="mx-auto max-w-4xl space-y-6">
       <BackButton to="/pass" />
 
-      <ImageFrame
-        src={images[current]}
-        alt={l.title}
-        ratio="aspect-[4/3] sm:aspect-[16/9]"
-        className="rounded-2xl"
-        priority
-        fallback={l.type === "room" ? "🏠" : "📦"}
-        onClick={images.length ? () => setViewerOpen(true) : undefined}
-          />
+      <ImageGallery key={l.id} images={images} title={l.title} fallback={l.type === "room" ? "🏠" : "📦"}>
+        {!isOwner && <FavoriteButton listingId={l.id} initial={data.isFavorite} targetType="pass" />}
+      </ImageGallery>
+      
         {/* ... bộ đếm ảnh giống trên ... */}
         {!isOwner && (
           <div className="absolute right-3 top-3 z-10">

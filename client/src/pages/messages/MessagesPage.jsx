@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { listConversationsApi, getMessagesApi, sendMessageApi } from "../../api/conversations";
+import {
+  listConversationsApi,
+  getMessagesApi,
+  sendMessageApi,
+} from "../../api/conversations";
 import Avatar from "../../components/Avatar";
 import Lightbox from "../../components/Lightbox";
 import CountBadge from "../../components/CountBadge";
@@ -14,7 +18,53 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const IMAGE_PREVIEW_TEXT = "📷 Đã gửi ảnh";
 
 const timeLabel = (iso) =>
-  new Date(iso).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+  new Date(iso).toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+// Nhận biết màn hình điện thoại (< md của Tailwind)
+function useIsMobile() {
+  const query = "(max-width: 767px)";
+  const [mobile, setMobile] = useState(
+    () => typeof window !== "undefined" && window.matchMedia(query).matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const onChange = () => setMobile(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return mobile;
+}
+
+// Chiều cao vùng nhìn thấy thật sự (đã trừ bàn phím) để khung chat luôn sát bàn phím
+function useVisualViewport(enabled) {
+  const [vv, setVv] = useState({ height: window.innerHeight, top: 0 });
+  useEffect(() => {
+    if (!enabled) return;
+    const v = window.visualViewport;
+    const update = () =>
+      setVv(
+        v
+          ? { height: v.height, top: v.offsetTop }
+          : { height: window.innerHeight, top: 0 },
+      );
+    update();
+    if (!v) {
+      window.addEventListener("resize", update);
+      return () => window.removeEventListener("resize", update);
+    }
+    v.addEventListener("resize", update);
+    v.addEventListener("scroll", update);
+    return () => {
+      v.removeEventListener("resize", update);
+      v.removeEventListener("scroll", update);
+    };
+  }, [enabled]);
+  return vv;
+}
 
 /* ---------- Ô soạn tin: nhập chữ + chọn ảnh ---------- */
 // Được gắn key theo cuộc trò chuyện nên đổi cuộc trò chuyện là nội dung đang soạn tự được làm mới
@@ -24,6 +74,7 @@ function Composer({ onSend }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const inputRef = useRef(null);
+  const textRef = useRef(null);
   const filesRef = useRef([]);
 
   useEffect(() => {
@@ -32,7 +83,8 @@ function Composer({ onSend }) {
 
   // Rời khỏi cuộc trò chuyện thì giải phóng ảnh xem trước
   useEffect(() => {
-    return () => filesRef.current.forEach((f) => URL.revokeObjectURL(f.preview));
+    return () =>
+      filesRef.current.forEach((f) => URL.revokeObjectURL(f.preview));
   }, []);
 
   const handlePick = (e) => {
@@ -43,7 +95,8 @@ function Composer({ onSend }) {
     let message = "";
     const valid = [];
     for (const f of picked) {
-      if (!ALLOWED_TYPES.includes(f.type)) message = "Chỉ chấp nhận ảnh JPG, PNG hoặc WebP";
+      if (!ALLOWED_TYPES.includes(f.type))
+        message = "Chỉ chấp nhận ảnh JPG, PNG hoặc WebP";
       else if (f.size > MAX_SIZE) message = "Mỗi ảnh tối đa 5MB";
       else valid.push(f);
     }
@@ -51,7 +104,9 @@ function Composer({ onSend }) {
     const room = MAX_IMAGES - files.length;
     if (valid.length > room) message = `Tối đa ${MAX_IMAGES} ảnh mỗi tin nhắn`;
 
-    const accepted = valid.slice(0, room).map((file) => ({ file, preview: URL.createObjectURL(file) }));
+    const accepted = valid
+      .slice(0, room)
+      .map((file) => ({ file, preview: URL.createObjectURL(file) }));
     setFiles((prev) => [...prev, ...accepted]);
     setError(message);
   };
@@ -66,10 +121,14 @@ function Composer({ onSend }) {
     const value = text.trim();
     if ((!value && files.length === 0) || sending) return;
 
+    textRef.current?.focus(); // giữ bàn phím ngay lúc bấm gửi
     setSending(true);
     setError("");
     try {
-      await onSend(value, files.map((f) => f.file));
+      await onSend(
+        value,
+        files.map((f) => f.file),
+      );
       files.forEach((f) => URL.revokeObjectURL(f.preview));
       setFiles([]);
       setText("");
@@ -77,22 +136,39 @@ function Composer({ onSend }) {
       setError(err.response?.data?.message || "Không gửi được tin nhắn");
     } finally {
       setSending(false);
+      textRef.current?.focus(); // vẫn giữ bàn phím sau khi gửi xong
     }
   };
 
   return (
-    <form onSubmit={submit} className="border-t border-gray-200 dark:border-gray-700">
+    <form
+      onSubmit={submit}
+      className="border-t border-gray-200 dark:border-gray-700"
+    >
       {error && (
-        <p className="mx-3 mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-300">{error}</p>
+        <p className="mx-3 mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-300">
+          {error}
+        </p>
       )}
 
       {files.length > 0 && (
         <div className="flex flex-wrap gap-2 px-3 pt-3">
           {files.map((f) => (
-            <div key={f.preview} className="relative h-16 w-16 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
-              <img src={f.preview} alt="" className="h-full w-full object-cover" />
-              <button type="button" onClick={() => removeFile(f.preview)} aria-label="Bỏ ảnh này"
-                className="absolute right-0 top-0 rounded-bl bg-black/70 px-1.5 text-xs text-white">
+            <div
+              key={f.preview}
+              className="relative h-16 w-16 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
+            >
+              <img
+                src={f.preview}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => removeFile(f.preview)}
+                aria-label="Bỏ ảnh này"
+                className="absolute right-0 top-0 rounded-bl bg-black/70 px-1.5 text-xs text-white"
+              >
                 ✕
               </button>
             </div>
@@ -101,7 +177,14 @@ function Composer({ onSend }) {
       )}
 
       <div className="flex gap-2 p-3">
-        <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handlePick} className="hidden" />
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          onChange={handlePick}
+          className="hidden"
+        />
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
@@ -112,14 +195,17 @@ function Composer({ onSend }) {
           🖼️
         </button>
         <input
+          ref={textRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
           maxLength={2000}
           placeholder="Nhập tin nhắn..."
+          enterKeyHint="send"
           className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 outline-none focus:border-indigo-500 dark:border-gray-600 dark:bg-gray-800"
         />
         <button
           type="submit"
+          onMouseDown={(e) => e.preventDefault()} // không cho nút cướp focus của input
           disabled={sending || (!text.trim() && files.length === 0)}
           className="rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
         >
@@ -148,6 +234,20 @@ export default function MessagesPage() {
   const listRef = useRef(null); // khung cuộn của tin nhắn
   const stickRef = useRef(true); // đang ở sát cuối khung chat thì mới tự cuộn theo tin mới
   const firstScrollRef = useRef(true);
+
+  const isMobile = useIsMobile();
+  const mobileChat = isMobile && !!conversationId; // điện thoại + đang mở một cuộc trò chuyện
+  const vv = useVisualViewport(mobileChat);
+
+  // Khoá cuộn trang phía sau khi chat toàn màn hình trên điện thoại
+  useEffect(() => {
+    if (!mobileChat) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileChat]);
 
   // Danh sách hội thoại (làm mới mỗi 10 giây để cập nhật tin chưa đọc)
   useEffect(() => {
@@ -188,13 +288,20 @@ export default function MessagesPage() {
 
     const load = async () => {
       try {
-        const data = await getMessagesApi(conversationId, initial ? null : lastRef.current);
+        const data = await getMessagesApi(
+          conversationId,
+          initial ? null : lastRef.current,
+        );
         if (!active) return;
         setCanSend(data.canSend);
         if (initial) {
           setMessages(data.messages);
           initial = false;
-          setConvs((list) => list.map((c) => (c.id === conversationId ? { ...c, unread: 0 } : c)));
+          setConvs((list) =>
+            list.map((c) =>
+              c.id === conversationId ? { ...c, unread: 0 } : c,
+            ),
+          );
           refreshNotifications();
         } else if (data.messages.length) {
           refreshNotifications();
@@ -207,7 +314,8 @@ export default function MessagesPage() {
           ? data.messages[data.messages.length - 1].createdAt
           : lastRef.current || new Date(0).toISOString();
       } catch (err) {
-        if (active && initial) setError(err.response?.data?.message || "Không tải được tin nhắn");
+        if (active && initial)
+          setError(err.response?.data?.message || "Không tải được tin nhắn");
       }
     };
 
@@ -245,26 +353,57 @@ export default function MessagesPage() {
     if (stickRef.current) scrollToBottom("auto");
   };
 
+  // Bàn phím bật/tắt làm khung đổi chiều cao: giữ tin mới nhất ở cuối
+  useEffect(() => {
+    if (mobileChat && stickRef.current) scrollToBottom("auto");
+  }, [vv.height, mobileChat]);
+
   // Gọi từ Composer: lỗi được ném ra để Composer tự hiển thị
   const send = async (text, files) => {
     const { message } = await sendMessageApi(conversationId, text, files);
     stickRef.current = true;
-    setMessages((prev) => (prev.some((m) => m._id === message._id) ? prev : [...prev, message]));
+    setMessages((prev) =>
+      prev.some((m) => m._id === message._id) ? prev : [...prev, message],
+    );
     setConvs((list) =>
       list.map((c) =>
         c.id === conversationId
-          ? { ...c, lastMessage: { text: message.text || IMAGE_PREVIEW_TEXT, senderId: message.senderId } }
-          : c
-      )
+          ? {
+              ...c,
+              lastMessage: {
+                text: message.text || IMAGE_PREVIEW_TEXT,
+                senderId: message.senderId,
+              },
+            }
+          : c,
+      ),
     );
+  };
+
+  // Chạm ra ngoài ô soạn tin thì ẩn bàn phím
+  const dismissKeyboard = (e) => {
+    if (e.target.closest("form")) return;
+    const el = document.activeElement;
+    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) el.blur();
   };
 
   const active = convs.find((c) => c.id === conversationId);
 
   return (
-    <div className="mx-auto grid h-[70vh] max-w-6xl overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 md:grid-cols-[280px_1fr]">
-      {/* Danh sách hội thoại */}
-      <aside className="overflow-y-auto border-b border-gray-200 dark:border-gray-700 md:border-b-0 md:border-r">
+    <div
+      style={mobileChat ? { top: vv.top, height: vv.height } : undefined}
+      className={
+        mobileChat
+          ? "fixed inset-x-0 z-50 flex flex-col overflow-hidden bg-white dark:bg-gray-900"
+          : "mx-auto grid h-[70vh] max-w-6xl overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 md:grid-cols-[280px_1fr]"
+      }
+    >
+      {/* Danh sách hội thoại: trên điện thoại sẽ ẩn khi đã mở một cuộc trò chuyện */}
+      <aside
+        className={`overflow-y-auto border-b border-gray-200 dark:border-gray-700 md:border-b-0 md:border-r ${
+          conversationId ? "hidden md:block" : ""
+        }`}
+      >
         <h2 className="px-4 py-3 font-semibold">Tin nhắn</h2>
         {convsLoaded && convs.length === 0 && (
           <p className="px-4 text-sm text-gray-500 dark:text-gray-400">
@@ -277,10 +416,20 @@ export default function MessagesPage() {
             onClick={() => navigate(`/messages/${c.id}`)}
             className={`flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 ${c.id === conversationId ? "bg-indigo-50 dark:bg-gray-800" : ""}`}
           >
-            <Avatar src={c.other.avatarUrl} name={c.other.displayName} size={40} />
+            <Avatar
+              src={c.other.avatarUrl}
+              name={c.other.displayName}
+              size={40}
+            />
             <div className="min-w-0 flex-1">
-              <p className={`truncate ${c.unread > 0 ? "font-bold" : "font-medium"}`}>{c.other.displayName}</p>
-              <p className={`truncate text-xs ${c.unread > 0 ? "font-semibold text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}>
+              <p
+                className={`truncate ${c.unread > 0 ? "font-bold" : "font-medium"}`}
+              >
+                {c.other.displayName}
+              </p>
+              <p
+                className={`truncate text-xs ${c.unread > 0 ? "font-semibold text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}
+              >
                 {c.lastMessage?.text || "Chưa có tin nhắn"}
               </p>
             </div>
@@ -290,7 +439,12 @@ export default function MessagesPage() {
       </aside>
 
       {/* Khung chat */}
-      <section className="flex min-h-0 flex-col">
+      <section
+        onClick={dismissKeyboard}
+        className={`min-h-0 flex-col ${
+          mobileChat ? "flex flex-1" : conversationId ? "flex" : "hidden md:flex"
+        }`}
+      >
         {!conversationId ? (
           <div className="flex flex-1 items-center justify-center text-gray-500 dark:text-gray-400">
             Chọn một cuộc trò chuyện để bắt đầu
@@ -298,28 +452,57 @@ export default function MessagesPage() {
         ) : (
           <>
             <header className="flex items-center gap-3 border-b border-gray-200 px-4 py-3 dark:border-gray-700">
-              {active && <Avatar src={active.other.avatarUrl} name={active.other.displayName} size={36} />}
-              <h2 className="font-semibold">{active?.other.displayName || "Cuộc trò chuyện"}</h2>
+              <button
+                type="button"
+                onClick={() => navigate("/messages")}
+                aria-label="Quay lại danh sách"
+                className="-ml-1 rounded-lg px-2 py-1 text-xl hover:bg-gray-100 dark:hover:bg-gray-800 md:hidden"
+              >
+                ←
+              </button>
+              {active && (
+                <Avatar
+                  src={active.other.avatarUrl}
+                  name={active.other.displayName}
+                  size={36}
+                />
+              )}
+              <h2 className="font-semibold">
+                {active?.other.displayName || "Cuộc trò chuyện"}
+              </h2>
             </header>
 
-            <div ref={listRef} onScroll={handleListScroll} className="flex-1 space-y-2 overflow-y-auto p-4">
+            <div
+              ref={listRef}
+              onScroll={handleListScroll}
+              className="flex-1 space-y-2 overflow-y-auto p-4"
+            >
               {messages.map((m) => {
                 const mine = m.senderId === user.id;
                 const hasImages = m.images?.length > 0;
                 return (
-                  <div key={m._id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                  <div
+                    key={m._id}
+                    className={`flex ${mine ? "justify-end" : "justify-start"}`}
+                  >
                     <div
-                      className={`max-w-[75%] rounded-2xl px-3 py-2 ${mine
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-100 dark:bg-gray-800"}`}
+                      className={`max-w-[75%] rounded-2xl px-3 py-2 ${
+                        mine
+                          ? "bg-indigo-600 text-white"
+                          : "bg-gray-100 dark:bg-gray-800"
+                      }`}
                     >
                       {hasImages && (
-                        <div className={`mb-1 grid w-56 gap-1 sm:w-64 ${m.images.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+                        <div
+                          className={`mb-1 grid w-56 gap-1 sm:w-64 ${m.images.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
+                        >
                           {m.images.map((url, i) => (
                             <button
                               type="button"
                               key={url}
-                              onClick={() => setViewer({ images: m.images, index: i })}
+                              onClick={() =>
+                                setViewer({ images: m.images, index: i })
+                              }
                               className="overflow-hidden rounded-lg"
                             >
                               <img
@@ -333,8 +516,14 @@ export default function MessagesPage() {
                           ))}
                         </div>
                       )}
-                      {m.text && <p className="whitespace-pre-wrap break-words">{m.text}</p>}
-                      <p className={`mt-1 text-right text-[10px] ${mine ? "text-indigo-200" : "text-gray-500"}`}>
+                      {m.text && (
+                        <p className="whitespace-pre-wrap break-words">
+                          {m.text}
+                        </p>
+                      )}
+                      <p
+                        className={`mt-1 text-right text-[10px] ${mine ? "text-indigo-200" : "text-gray-500"}`}
+                      >
                         {timeLabel(m.createdAt)}
                       </p>
                     </div>
@@ -344,7 +533,9 @@ export default function MessagesPage() {
             </div>
 
             {error && (
-              <p className="mx-4 mb-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-300">{error}</p>
+              <p className="mx-4 mb-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-300">
+                {error}
+              </p>
             )}
 
             {canSend ? (

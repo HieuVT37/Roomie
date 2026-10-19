@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -68,7 +68,7 @@ function useVisualViewport(enabled) {
 
 /* ---------- Ô soạn tin: nhập chữ + chọn ảnh ---------- */
 // Được gắn key theo cuộc trò chuyện nên đổi cuộc trò chuyện là nội dung đang soạn tự được làm mới
-function Composer({ onSend }) {
+function Composer({ onSend, onFocus }) {
   const [text, setText] = useState("");
   const [files, setFiles] = useState([]); // [{ file, preview }]
   const [sending, setSending] = useState(false);
@@ -117,7 +117,7 @@ function Composer({ onSend }) {
   };
 
   const submit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     const value = text.trim();
     if ((!value && files.length === 0) || sending) return;
 
@@ -141,8 +141,9 @@ function Composer({ onSend }) {
   };
 
   return (
-    <form
-      onSubmit={submit}
+    // Dùng div thay cho form để iOS không coi đây là biểu mẫu (bớt thanh mũi tên lên/xuống)
+    <div
+      data-composer
       className="border-t border-gray-200 dark:border-gray-700"
     >
       {error && (
@@ -198,13 +199,21 @@ function Composer({ onSend }) {
           ref={textRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onFocus={onFocus}
+          onKeyDown={(e) => {
+            // Enter để gửi (bỏ qua khi đang gõ dấu tiếng Việt bằng IME)
+            if (e.key === "Enter" && !e.nativeEvent.isComposing) submit(e);
+          }}
+          autoComplete="off"
+          name="chat-message"
           maxLength={2000}
           placeholder="Nhập tin nhắn..."
           enterKeyHint="send"
           className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 outline-none focus:border-indigo-500 dark:border-gray-600 dark:bg-gray-800"
         />
         <button
-          type="submit"
+          type="button"
+          onClick={submit}
           onMouseDown={(e) => e.preventDefault()} // không cho nút cướp focus của input
           disabled={sending || (!text.trim() && files.length === 0)}
           className="rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
@@ -212,7 +221,7 @@ function Composer({ onSend }) {
           {sending ? "Đang gửi..." : "Gửi"}
         </button>
       </div>
-    </form>
+    </div>
   );
 }
 
@@ -333,15 +342,37 @@ export default function MessagesPage() {
     if (el) el.scrollTo({ top: el.scrollHeight, behavior });
   };
 
+  // Đưa khung tin nhắn về đúng vị trí sau khi bố cục đổi (bàn phím bật/tắt, mở chat, ảnh tải xong).
+  // iOS không tự "kẹp" lại vị trí cuộn khi khung cao thêm nên sẽ để lại khoảng trống, ở đây ép lại bằng tay.
+  const timersRef = useRef([]);
+  const settleScroll = useCallback(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const max = Math.max(0, el.scrollHeight - el.clientHeight);
+    if (stickRef.current) el.scrollTop = max;
+    else if (el.scrollTop > max) el.scrollTop = max;
+  }, []);
+  const scheduleSettle = useCallback(
+    (delays = [0, 100, 300, 600]) => {
+      timersRef.current.forEach(clearTimeout);
+      timersRef.current = delays.map((ms) => setTimeout(settleScroll, ms));
+    },
+    [settleScroll],
+  );
+  useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
+
   useEffect(() => {
     if (!messages.length) return;
     if (firstScrollRef.current) {
-      scrollToBottom("auto"); // mở cuộc trò chuyện: nhảy thẳng tới tin mới nhất
+      // mở cuộc trò chuyện: nhảy thẳng tới tin mới nhất, cuộn lại vài lần phòng khi bố cục còn đổi
       firstScrollRef.current = false;
+      stickRef.current = true;
+      scrollToBottom("auto");
+      scheduleSettle();
     } else if (stickRef.current) {
       scrollToBottom("smooth");
     }
-  }, [messages.length]);
+  }, [messages.length, scheduleSettle]);
 
   const handleListScroll = (e) => {
     const el = e.currentTarget;
@@ -355,8 +386,23 @@ export default function MessagesPage() {
 
   // Bàn phím bật/tắt làm khung đổi chiều cao: giữ tin mới nhất ở cuối
   useEffect(() => {
-    if (mobileChat && stickRef.current) scrollToBottom("auto");
-  }, [vv.height, mobileChat]);
+    if (mobileChat) scheduleSettle();
+  }, [vv.height, vv.top, mobileChat, scheduleSettle]);
+
+  // Ô nhập được chạm: coi như muốn xem tin mới nhất
+  const handleComposerFocus = () => {
+    stickRef.current = true;
+    scheduleSettle([100, 300, 600]);
+  };
+
+  // Bàn phím vừa ẩn: kéo trang về đầu và dọn khoảng trống
+  const handleSectionBlur = () => {
+    if (!mobileChat) return;
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+      scheduleSettle();
+    }, 50);
+  };
 
   // Gọi từ Composer: lỗi được ném ra để Composer tự hiển thị
   const send = async (text, files) => {
@@ -382,7 +428,7 @@ export default function MessagesPage() {
 
   // Chạm ra ngoài ô soạn tin thì ẩn bàn phím
   const dismissKeyboard = (e) => {
-    if (e.target.closest("form")) return;
+    if (e.target.closest("[data-composer]")) return;
     const el = document.activeElement;
     if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) el.blur();
   };
@@ -441,6 +487,7 @@ export default function MessagesPage() {
       {/* Khung chat */}
       <section
         onClick={dismissKeyboard}
+        onBlur={handleSectionBlur}
         className={`min-h-0 flex-col ${
           mobileChat ? "flex flex-1" : conversationId ? "flex" : "hidden md:flex"
         }`}
@@ -539,7 +586,11 @@ export default function MessagesPage() {
             )}
 
             {canSend ? (
-              <Composer key={conversationId} onSend={send} />
+              <Composer
+                key={conversationId}
+                onSend={send}
+                onFocus={handleComposerFocus}
+              />
             ) : (
               <p className="border-t border-gray-200 p-3 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
                 Kết nối đã bị hủy nên không thể nhắn tin tiếp.

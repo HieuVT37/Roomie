@@ -115,7 +115,7 @@ export default function AdminUsersPage() {
               <th className="px-4 py-3">Gói</th>
               <th className="px-4 py-3">Trạng thái</th>
               <th className="px-4 py-3">Chủ trọ</th>
-              <th className="px-4 py-3">Đăng nhập gần nhất</th>
+              <th className="px-4 py-3">Đăng nhập</th>
               <th className="px-4 py-3">Thao tác</th>
             </tr>
           </thead>

@@ -122,8 +122,7 @@ export default function Navbar() {
           Đặt NGOÀI <header> để "fixed" tính theo màn hình */}
       <nav
         aria-label="Menu chính (điện thoại)"
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden dark:border-gray-700 dark:bg-gray-900/95"
-      >
+        className="fixed inset-x-0 bottom-0 z-50 transform-gpu border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden dark:border-gray-700 dark:bg-gray-900">
         <ul className="flex flex-wrap justify-center px-1 py-1">
           {renderItems(barItemClass, "basis-1/4")}
         </ul>

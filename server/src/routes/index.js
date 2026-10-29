@@ -12,6 +12,7 @@ import billingRoutes from "./billingRoutes.js";
 import supportRoutes from "./supportRoutes.js";
 import adminRoutes from "./adminRoutes.js";
 import notificationRoutes from "./notificationRoutes.js";
+import aiRoutes from "./aiRoutes.js";
 
 const router = Router();
 
@@ -32,5 +33,6 @@ router.use("/billing", billingRoutes);
 router.use("/support", supportRoutes);
 router.use("/admin", adminRoutes);
 router.use("/notifications", notificationRoutes);
+router.use("/ai", aiRoutes);
 
 export default router;

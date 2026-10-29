@@ -6,7 +6,7 @@ const router = Router();
 const limiter = rateLimit({ windowMs: 60 * 1000, max: 10 });
 router.use(limiter);
 
-const MODEL = "gemini-2.5-flash";
+const MODEL = "gemini-3.8-flash";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 const SYSTEM_PROMPT = `Bạn là trợ lý AI của Roomie, ứng dụng giúp sinh viên và người trẻ tại Hà Nội:

@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { adminUsersApi, adminUpdateUserApi, adminGrantPlanApi } from "../../api/admin";
+import {
+  adminUsersApi,
+  adminUpdateUserApi,
+  adminGrantPlanApi,
+  adminDeleteUserApi,
+} from "../../api/admin";
 import FormField from "../../components/FormField";
 import Pagination from "../../components/Pagination";
 import { SelectField } from "../../components/FormControls";
@@ -28,14 +33,31 @@ export default function AdminUsersPage() {
     setLoading(true);
     adminUsersApi({ ...filters, page })
       .then((res) => active && setData(res))
-      .catch((err) => active && setError(err.response?.data?.message || "Không thể kết nối máy chủ"))
+      .catch(
+        (err) =>
+          active &&
+          setError(err.response?.data?.message || "Không thể kết nối máy chủ"),
+      )
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
     };
   }, [page, filters]);
 
-  const onText = (e) => setDraft((d) => ({ ...d, [e.target.name]: e.target.value }));
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(""), 6000); 
+    return () => clearTimeout(timer);
+  }, [notice]);
+
+  useEffect(() => {
+    if (!error) return;
+    const timer = setTimeout(() => setError(""), 6000);
+    return () => clearTimeout(timer);
+  }, [error]);
+
+  const onText = (e) =>
+    setDraft((d) => ({ ...d, [e.target.name]: e.target.value }));
   const apply = (e) => {
     e.preventDefault();
     setPage(1);
@@ -43,7 +65,10 @@ export default function AdminUsersPage() {
   };
 
   const patchRow = (id, patch) =>
-    setData((d) => ({ ...d, items: d.items.map((u) => (u.id === id ? { ...u, ...patch } : u)) }));
+    setData((d) => ({
+      ...d,
+      items: d.items.map((u) => (u.id === id ? { ...u, ...patch } : u)),
+    }));
 
   const act = async (fn) => {
     setError("");
@@ -55,10 +80,29 @@ export default function AdminUsersPage() {
     }
   };
 
+  const removeUser = (u) => {
+    const msg = `XÓA VĨNH VIỄN tài khoản ${u.email}?\n\nHồ sơ, các tin đăng và gói đăng ký của người này sẽ bị xóa. Hành động này không thể hoàn tác.`;
+    if (!window.confirm(msg)) return;
+    act(async () => {
+      await adminDeleteUserApi(u.id);
+      setData((d) => ({
+        ...d,
+        items: d.items.filter((x) => x.id !== u.id),
+        total: Math.max(0, d.total - 1),
+      }));
+      if (planForm?.id === u.id) setPlanForm(null);
+      setNotice(`Đã xóa tài khoản ${u.email}`);
+    });
+  };
+
   const changeStatus = (u, status) => {
-    const note = status === "active"
-      ? `Mở khóa cho ${u.email}?`
-      : `Đổi trạng thái ${u.email} thành "${USER_STATUS_LABELS[status]}"? Người này sẽ không đăng nhập được và các tin đang hiển thị sẽ bị ngưng.`;
+    // Chọn "Xóa tài khoản" trong dropdown -> chuyển sang luồng xóa
+    if (status === "delete") return removeUser(u);
+
+    const note =
+      status === "active"
+        ? `Mở khóa cho ${u.email}?`
+        : `Đổi trạng thái ${u.email} thành "${USER_STATUS_LABELS[status]}"? Người này sẽ không đăng nhập được và các tin đang hiển thị sẽ bị ngưng.`;
     if (!window.confirm(note)) return;
     act(async () => {
       const { user } = await adminUpdateUserApi(u.id, { status });
@@ -68,43 +112,105 @@ export default function AdminUsersPage() {
 
   const toggleLandlord = (u) =>
     act(async () => {
-      const { user } = await adminUpdateUserApi(u.id, { isLandlord: !u.isLandlord });
+      const { user } = await adminUpdateUserApi(u.id, {
+        isLandlord: !u.isLandlord,
+      });
       patchRow(u.id, { isLandlord: user.isLandlord });
     });
 
   const grant = () =>
     act(async () => {
-      const res = await adminGrantPlanApi(planForm.id, planForm.planCode, Number(planForm.days) || 30);
+      const res = await adminGrantPlanApi(
+        planForm.id,
+        planForm.planCode,
+        Number(planForm.days) || 30,
+      );
       patchRow(planForm.id, { currentPlan: res.currentPlan });
       setNotice(
         res.expiresAt
           ? `Đã cấp gói ${PLAN_LABELS[res.currentPlan]}, hết hạn ${new Date(res.expiresAt).toLocaleDateString("vi-VN")}`
-          : "Đã đưa người dùng về gói Basic"
+          : "Đã đưa người dùng về gói Basic",
       );
       setPlanForm(null);
     });
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Người dùng <span className="text-base font-normal text-gray-500">({data.total})</span></h1>
+      <h1 className="text-2xl font-bold">
+        Người dùng{" "}
+        <span className="text-base font-normal text-gray-500">
+          ({data.total})
+        </span>
+      </h1>
 
-      <form onSubmit={apply} className="grid items-end gap-4 rounded-2xl border border-gray-200 p-4 dark:border-gray-700 sm:grid-cols-3 lg:grid-cols-6">
+      <form
+        onSubmit={apply}
+        className="grid items-end gap-4 rounded-2xl border border-gray-200 p-4 dark:border-gray-700 sm:grid-cols-3 lg:grid-cols-6"
+      >
         <div className="sm:col-span-3 lg:col-span-2">
-          <FormField label="Tìm theo email hoặc tên" id="q" value={draft.q} onChange={onText} />
+          <FormField
+            label="Tìm theo email hoặc tên"
+            id="q"
+            value={draft.q}
+            onChange={onText}
+          />
         </div>
-        <SelectField label="Vai trò" id="role" value={draft.role} onChange={onText} placeholder="Tất cả"
-          options={[{ value: "user", label: "Người dùng" }, { value: "admin", label: "Quản trị" }]} />
-        <SelectField label="Trạng thái" id="status" value={draft.status} onChange={onText} placeholder="Tất cả"
-          options={toOptions(USER_STATUS_LABELS)} />
-        <SelectField label="Gói" id="plan" value={draft.plan} onChange={onText} placeholder="Tất cả"
-          options={toOptions(PLAN_LABELS)} />
-        <SelectField label="Chủ trọ" id="landlord" value={draft.landlord} onChange={onText} placeholder="Tất cả"
-          options={[{ value: "true", label: "Là chủ trọ" }, { value: "false", label: "Không" }]} />
-        <button type="submit" className="rounded-lg bg-indigo-600 py-2 font-medium text-white hover:bg-indigo-700">Lọc</button>
+        <SelectField
+          label="Vai trò"
+          id="role"
+          value={draft.role}
+          onChange={onText}
+          placeholder="Tất cả"
+          options={[
+            { value: "user", label: "Người dùng" },
+            { value: "admin", label: "Quản trị" },
+          ]}
+        />
+        <SelectField
+          label="Trạng thái"
+          id="status"
+          value={draft.status}
+          onChange={onText}
+          placeholder="Tất cả"
+          options={toOptions(USER_STATUS_LABELS)}
+        />
+        <SelectField
+          label="Gói"
+          id="plan"
+          value={draft.plan}
+          onChange={onText}
+          placeholder="Tất cả"
+          options={toOptions(PLAN_LABELS)}
+        />
+        <SelectField
+          label="Chủ trọ"
+          id="landlord"
+          value={draft.landlord}
+          onChange={onText}
+          placeholder="Tất cả"
+          options={[
+            { value: "true", label: "Là chủ trọ" },
+            { value: "false", label: "Không" },
+          ]}
+        />
+        <button
+          type="submit"
+          className="rounded-lg bg-indigo-600 py-2 font-medium text-white hover:bg-indigo-700"
+        >
+          Lọc
+        </button>
       </form>
 
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-300">{error}</p>}
-      {notice && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-950 dark:text-green-300">{notice}</p>}
+      {error && (
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-300">
+          {error}
+        </p>
+      )}
+      {notice && (
+        <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-950 dark:text-green-300">
+          {notice}
+        </p>
+      )}
       {loading && <p>Đang tải...</p>}
 
       <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-700">
@@ -121,19 +227,38 @@ export default function AdminUsersPage() {
           </thead>
           <tbody>
             {data.items.map((u) => (
-              <tr key={u.id} className="border-t border-gray-100 align-top dark:border-gray-800">
+              <tr
+                key={u.id}
+                className="border-t border-gray-100 align-top dark:border-gray-800"
+              >
                 <td className="px-4 py-3">
                   <p className="font-medium">{u.displayName}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{u.email}</p>
-                  {u.role === "admin" && <span className="rounded bg-indigo-100 px-1.5 text-xs text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200">Quản trị</span>}
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {u.email}
+                  </p>
+                  {u.role === "admin" && (
+                    <span className="rounded bg-indigo-100 px-1.5 text-xs text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200">
+                      Quản trị
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3">{PLAN_LABELS[u.currentPlan]}</td>
-                <td className={`px-4 py-3 font-medium ${STATUS_COLOR[u.status]}`}>{USER_STATUS_LABELS[u.status]}</td>
+                <td
+                  className={`px-4 py-3 font-medium ${STATUS_COLOR[u.status]}`}
+                >
+                  {USER_STATUS_LABELS[u.status]}
+                </td>
                 <td className="px-4 py-3">{u.isLandlord ? "Có" : "—"}</td>
-                <td className="px-4 py-3 text-xs">{u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString("vi-VN") : "Chưa đăng nhập"}</td>
+                <td className="px-4 py-3 text-xs">
+                  {u.lastLoginAt
+                    ? new Date(u.lastLoginAt).toLocaleString("vi-VN")
+                    : "Chưa đăng nhập"}
+                </td>
                 <td className="px-4 py-3">
                   {u.role === "admin" ? (
-                    <span className="text-xs text-gray-400">Không thể thay đổi</span>
+                    <span className="text-xs text-gray-400">
+                      Không thể thay đổi
+                    </span>
                   ) : (
                     <div className="space-y-2">
                       <div className="flex flex-nowrap items-center gap-2">
@@ -143,32 +268,81 @@ export default function AdminUsersPage() {
                           className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-800"
                         >
                           {["active", "suspended", "banned"].map((s) => (
-                            <option key={s} value={s}>{USER_STATUS_LABELS[s]}</option>
+                            <option key={s} value={s}>
+                              {USER_STATUS_LABELS[s]}
+                            </option>
                           ))}
+                          <option value="delete">Xóa tài khoản</option>
                         </select>
-                        <button onClick={() => toggleLandlord(u)}
-                          className="rounded-lg border border-gray-300 px-2 py-1 text-xs dark:border-gray-600">
-                          {u.isLandlord ? "Gỡ quyền chủ trọ" : "Cấp quyền chủ trọ"}
+                        <button
+                          onClick={() => toggleLandlord(u)}
+                          className="rounded-lg border border-gray-300 px-2 py-1 text-xs dark:border-gray-600"
+                        >
+                          {u.isLandlord
+                            ? "Gỡ quyền chủ trọ"
+                            : "Cấp quyền chủ trọ"}
                         </button>
-                        <button onClick={() => setPlanForm({ id: u.id, planCode: "plus", days: 30 })}
-                          className="rounded-lg border border-gray-300 px-2 py-1 text-xs dark:border-gray-600">
+                        <button
+                          onClick={() =>
+                            setPlanForm({
+                              id: u.id,
+                              planCode: "plus",
+                              days: 30,
+                            })
+                          }
+                          className="rounded-lg border border-gray-300 px-2 py-1 text-xs dark:border-gray-600"
+                        >
                           Cấp gói
                         </button>
                       </div>
                       {planForm?.id === u.id && (
                         <div className="flex flex-wrap items-center gap-2 rounded-lg bg-gray-50 p-2 dark:bg-gray-800">
-                          <select value={planForm.planCode} onChange={(e) => setPlanForm({ ...planForm, planCode: e.target.value })}
-                            className="rounded border border-gray-300 bg-white px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-900">
-                            {Object.entries(PLAN_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                          <select
+                            value={planForm.planCode}
+                            onChange={(e) =>
+                              setPlanForm({
+                                ...planForm,
+                                planCode: e.target.value,
+                              })
+                            }
+                            className="rounded border border-gray-300 bg-white px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-900"
+                          >
+                            {Object.entries(PLAN_LABELS).map(([v, l]) => (
+                              <option key={v} value={v}>
+                                {l}
+                              </option>
+                            ))}
                           </select>
                           {planForm.planCode !== "basic" && (
-                            <input type="number" min="1" max="365" value={planForm.days}
-                              onChange={(e) => setPlanForm({ ...planForm, days: e.target.value })}
-                              className="w-16 rounded border border-gray-300 bg-white px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-900" />
+                            <input
+                              type="number"
+                              min="1"
+                              max="365"
+                              value={planForm.days}
+                              onChange={(e) =>
+                                setPlanForm({
+                                  ...planForm,
+                                  days: e.target.value,
+                                })
+                              }
+                              className="w-16 rounded border border-gray-300 bg-white px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-900"
+                            />
                           )}
-                          {planForm.planCode !== "basic" && <span className="text-xs">ngày</span>}
-                          <button onClick={grant} className="rounded bg-indigo-600 px-2 py-1 text-xs text-white">Xác nhận</button>
-                          <button onClick={() => setPlanForm(null)} className="text-xs text-gray-500">Hủy</button>
+                          {planForm.planCode !== "basic" && (
+                            <span className="text-xs">ngày</span>
+                          )}
+                          <button
+                            onClick={grant}
+                            className="rounded bg-indigo-600 px-2 py-1 text-xs text-white"
+                          >
+                            Xác nhận
+                          </button>
+                          <button
+                            onClick={() => setPlanForm(null)}
+                            className="text-xs text-gray-500"
+                          >
+                            Hủy
+                          </button>
                         </div>
                       )}
                     </div>
@@ -180,7 +354,9 @@ export default function AdminUsersPage() {
         </table>
       </div>
 
-      {!loading && data.items.length === 0 && <p>Không có người dùng nào phù hợp.</p>}
+      {!loading && data.items.length === 0 && (
+        <p>Không có người dùng nào phù hợp.</p>
+      )}
       <Pagination page={page} pages={data.pages} onChange={setPage} />
     </div>
   );

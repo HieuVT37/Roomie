@@ -7,6 +7,7 @@ export const adminStatsApi = () => api.get("/admin/stats").then(d);
 export const adminUsersApi = (params) => api.get("/admin/users", { params }).then(d);
 export const adminUpdateUserApi = (id, data) => api.patch(`/admin/users/${id}`, data).then(d);
 export const adminGrantPlanApi = (id, planCode, days) => api.post(`/admin/users/${id}/plan`, { planCode, days }).then(d);
+export const adminDeleteUserApi = (id) => api.delete(`/admin/users/${id}`).then((r) => r.data);
 
 export const adminListingsApi = (params) => api.get("/admin/listings", { params }).then(d);
 export const adminModerateApi = (kind, id, status, note) =>

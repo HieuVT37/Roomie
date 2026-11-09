@@ -60,13 +60,14 @@ export const listMatches = asyncHandler(async (req, res) => {
   const limit = Math.min(30, Math.max(1, parseInt(req.query.limit) || 12));
   const minScore = Number(req.query.minScore) || 0;
   const location = String(req.query.location || "").trim().toLowerCase();
-  const gender = req.query.gender || "";
   const q = str(req.query.q).slice(0, 100).normalize("NFC").toLowerCase();
   const includeIncompatible = req.query.includeIncompatible === "true";
 
+  // Nam chỉ ghép với Nam, Nữ chỉ ghép với Nữ
   const candidates = await Profile.find({
     userId: { $ne: req.user._id },
     isLookingForRoommate: true,
+    gender: me.gender,
     "preferences.city": me.preferences.city,
   })
     .limit(500)
@@ -87,7 +88,7 @@ export const listMatches = asyncHandler(async (req, res) => {
   for (const c of candidates) {
     if (!activeIds.has(String(c.userId))) continue;
     if (missingForMatching(c).length) continue;
-    if (gender && c.gender !== gender) continue;
+    if (c.gender !== me.gender) continue;
     if (location && !c.preferences.locations.some((l) => l.toLowerCase().includes(location))) continue;
     if (q && !(c.bio || "").normalize("NFC").toLowerCase().includes(q)) continue;
 
@@ -149,7 +150,8 @@ export const getMatchDetail = asyncHandler(async (req, res) => {
 
   if (
     !target || !user || relation.status === "blocked_me" ||
-    !target.isLookingForRoommate || missingForMatching(target).length
+    !target.isLookingForRoommate || missingForMatching(target).length ||
+    target.gender !== me.gender // khác giới tính: không được xem hồ sơ Matching
   ) {
     throw httpError(404, "Không tìm thấy hồ sơ");
   }

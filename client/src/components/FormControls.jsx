@@ -1,11 +1,8 @@
-const inputClass =
-  "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-gray-600 dark:bg-gray-800 dark:focus:ring-indigo-900";
-
 export function SelectField({ label, id, options, placeholder, ...props }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1 block text-sm font-medium">{label}</label>
-      <select id={id} name={id} {...props} className={inputClass}>
+      <label htmlFor={id} className="label">{label}</label>
+      <select id={id} name={id} {...props} className="input">
         {placeholder && <option value="">{placeholder}</option>}
         {options.map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>
@@ -18,9 +15,11 @@ export function SelectField({ label, id, options, placeholder, ...props }) {
 export function SliderField({ label, id, value, onChange, min = 1, max = 5, lowLabel, highLabel }) {
   return (
     <div>
-      <div className="mb-1 flex justify-between text-sm font-medium">
+      <div className="mb-2 flex items-center justify-between text-sm font-medium">
         <label htmlFor={id}>{label}</label>
-        <span className="text-indigo-600 dark:text-indigo-400">{value}</span>
+        <span className="min-w-[1.75rem] rounded-full bg-subtle px-2 py-0.5 text-center text-xs font-semibold tabular-nums text-brand">
+          {value}
+        </span>
       </div>
       <input
         id={id}
@@ -29,10 +28,10 @@ export function SliderField({ label, id, value, onChange, min = 1, max = 5, lowL
         max={max}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-indigo-600"
+        className="h-2 w-full cursor-pointer accent-brand"
       />
       {(lowLabel || highLabel) && (
-        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+        <div className="mt-1 flex justify-between text-xs text-muted">
           <span>{lowLabel}</span>
           <span>{highLabel}</span>
         </div>
@@ -43,17 +42,20 @@ export function SliderField({ label, id, value, onChange, min = 1, max = 5, lowL
 
 export function CheckField({ label, id, checked, onChange, hint }) {
   return (
-    <label htmlFor={id} className="flex cursor-pointer items-start gap-2">
+    <label
+      htmlFor={id}
+      className="flex cursor-pointer items-start gap-3 rounded-[var(--radius-control)] p-2 -m-2 transition-colors hover:bg-subtle"
+    >
       <input
         id={id}
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-1 h-4 w-4 accent-indigo-600"
+        className="mt-0.5 h-[1.125rem] w-[1.125rem] shrink-0 cursor-pointer rounded accent-brand"
       />
       <span className="text-sm">
         {label}
-        {hint && <span className="block text-xs text-gray-500 dark:text-gray-400">{hint}</span>}
+        {hint && <span className="hint mt-0.5 block">{hint}</span>}
       </span>
     </label>
   );

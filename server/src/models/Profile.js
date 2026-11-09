@@ -47,6 +47,7 @@ const profileSchema = new Schema(
     displayName: { type: String, required: true, trim: true, maxlength: 60 },
     avatarUrl: { type: String, default: null },
     bio: { type: String, default: "", maxlength: 500 },
+    // Đầu vào mới chỉ Nam/Nữ (validator); "other"/"private" giữ lại cho dữ liệu cũ, không tham gia Matching
     gender: { type: String, enum: ["male", "female", "other", "private"] },
     birthYear: { type: Number, default: null },
     school: { type: String, default: null },

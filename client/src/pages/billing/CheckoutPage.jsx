@@ -5,6 +5,9 @@ import { getPlansApi, checkoutApi, simulatePaymentApi } from "../../api/billing"
 import { PAYMENT_METHOD_LABELS, PLAN_LABELS, PLAN_RANK, formatVND } from "../../utils/labels";
 import BackButton from "../../components/BackButton";
 import qrImage from "../../assets/qr_fb.png";
+import Icon from "../../components/Icon";
+import { confetti } from "../../components/fx/confetti";
+import { toast } from "../../components/fx/Toaster";
 
 const QR_BY_METHOD = {
   bank_transfer: qrImage,
@@ -13,7 +16,7 @@ const QR_BY_METHOD = {
   vnpay: qrImage,
 };
 
-const btn = "rounded-lg px-4 py-2 font-medium disabled:opacity-60";
+const btn = "btn";
 
 // Chuyển khoản ngân hàng đứng đầu danh sách
 const METHOD_ORDER = ["bank_transfer", "momo", "vnpay", "zalopay"];
@@ -63,6 +66,10 @@ export default function CheckoutPage() {
       if (data.payment.status === "success") await refreshUser();
       setPayment(data.payment);
       setStage("done");
+      if (data.payment.status === "success") {
+        confetti({ count: 140 });
+        toast("Thanh toán thành công, gói đã được kích hoạt");
+      }
     } catch (err) {
       setError(err.response?.data?.message || "Không thể kết nối máy chủ");
     } finally {
@@ -70,11 +77,11 @@ export default function CheckoutPage() {
     }
   };
 
-  if (!loaded) return <p>Đang tải...</p>;
+  if (!loaded) return <div className="skeleton h-64" aria-busy="true" aria-label="Đang tải" />;
   if (!plan) {
     return (
       <div className="mx-auto max-w-4xl space-y-3">
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-red-600 dark:bg-red-950 dark:text-red-300">
+        <p className="alert-error">
           {error || "Không tìm thấy gói này."}
         </p>
         <BackButton to="/pricing">Quay lại bảng giá</BackButton>
@@ -83,26 +90,30 @@ export default function CheckoutPage() {
   }
 
   const errorBox = error && (
-    <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-300">{error}</p>
+    <p className="alert-error">{error}</p>
   );
 
   /* ---- Bước 3: kết quả ---- */
   if (stage === "done") {
     const ok = payment.status === "success";
     return (
-      <div className="mx-auto max-w-4xl space-y-4 rounded-2xl border border-gray-200 p-6 text-center dark:border-gray-700">
-        <p className="text-5xl">{ok ? "✅" : "❌"}</p>
-        <h1 className="text-xl font-bold">{ok ? `Đã kích hoạt gói ${plan.name}` : "Thanh toán chưa hoàn tất"}</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Mã giao dịch: {payment.transactionRef}</p>
+      <div className="card enter mx-auto max-w-xl space-y-4 p-8 text-center sm:p-10">
+        <span className={`pop mx-auto flex h-16 w-16 items-center justify-center rounded-full ${ok
+          ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400"
+          : "bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400"}`}>
+          <Icon name={ok ? "check" : "plus"} size={30} className={ok ? "" : "rotate-45"} />
+        </span>
+        <h1 className="text-2xl font-semibold">{ok ? `Đã kích hoạt gói ${plan.name}` : "Thanh toán chưa hoàn tất"}</h1>
+        <p className="text-sm text-muted">Mã giao dịch: {payment.transactionRef}</p>
         <div className="flex justify-center gap-3">
           {ok ? (
-            <Link to="/billing" className={`${btn} bg-indigo-600 text-white hover:bg-indigo-700`}>Xem gói của tôi</Link>
+            <Link to="/billing" className={`${btn} btn-primary`}>Xem gói của tôi</Link>
           ) : (
-            <button onClick={() => { setStage("select"); setPayment(null); }} className={`${btn} bg-indigo-600 text-white hover:bg-indigo-700`}>
+            <button onClick={() => { setStage("select"); setPayment(null); }} className={`${btn} btn-primary`}>
               Thử lại
             </button>
           )}
-          <Link to="/pricing" className={`${btn} border border-gray-300 dark:border-gray-600`}>Bảng giá</Link>
+          <Link to="/pricing" className={`${btn} btn-secondary`}>Bảng giá</Link>
         </div>
       </div>
     );
@@ -115,7 +126,7 @@ if (stage === "gateway") {
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 rounded-2xl border-2 border-dashed border-yellow-500 p-6">
-      <p className="rounded-lg bg-yellow-100 px-3 py-2 text-center text-sm font-semibold text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
+      <p className="rounded-[var(--radius-control)] border border-amber-200 bg-amber-50 px-3 py-2 text-center text-sm font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-200">
         CỔNG THANH TOÁN GIẢ LẬP · chế độ thử nghiệm, không trừ tiền thật
       </p>
 
@@ -130,7 +141,7 @@ if (stage === "gateway") {
             <p>Gói: <b>{plan.name}</b></p>
             <p>Số tiền: <b>{formatVND(payment.amount)}</b></p>
             <p>Mã giao dịch: <b>{payment.transactionRef}</b></p>
-            <p className="text-gray-500 dark:text-gray-400">
+            <p className="text-muted">
               Giao dịch hết hạn sau 15 phút.
             </p>
           </div>
@@ -158,7 +169,7 @@ if (stage === "gateway") {
             <button
               disabled={busy}
               onClick={() => finish("cancel")}
-              className={`${btn} border border-gray-300 dark:border-gray-600`}
+              className={`${btn} btn-secondary`}
             >
               Hủy giao dịch
             </button>
@@ -170,7 +181,7 @@ if (stage === "gateway") {
             <img
               src={qrSrc}
               alt={`Mã QR ${PAYMENT_METHOD_LABELS[payment.method]}`}
-              className="h-54 w-54 rounded-lg bg-white p-2"
+              className="h-54 w-54 rounded-xl bg-white p-2 shadow-[var(--shadow-soft)]"
             />
           </div>
         )}
@@ -191,20 +202,20 @@ if (stage === "gateway") {
     <div className="mx-auto max-w-4xl space-y-5">
       <BackButton to="/pricing">Quay lại bảng giá</BackButton>
 
-      <div className="space-y-2 rounded-2xl border border-gray-200 p-5 dark:border-gray-700">
-        <h1 className="text-xl font-bold">{renew ? "Gia hạn" : "Nâng cấp"} gói {plan.name}</h1>
-        <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+      <div className="space-y-2 card p-5 sm:p-6">
+        <h1 className="text-2xl font-semibold">{renew ? "Gia hạn" : "Nâng cấp"} gói {plan.name}</h1>
+        <p className="text-3xl font-semibold tabular-nums text-indigo-700 dark:text-brand">
           {formatVND(plan.price)}<span className="text-sm font-normal text-gray-500">/30 ngày</span>
         </p>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-muted">
           Gói hiện tại: {PLAN_LABELS[user.currentPlan]}. {lower ? "Bạn đang dùng gói cao hơn, chưa thể mua gói này." : note}
         </p>
       </div>
 
-      <div className="space-y-2 rounded-2xl border border-gray-200 p-5 dark:border-gray-700">
+      <div className="space-y-2 card p-5 sm:p-6">
         <h2 className="font-semibold">Phương thức thanh toán</h2>
         {METHOD_ORDER.map((value) => (
-          <label key={value} className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700">
+          <label key={value} className="flex cursor-pointer items-center gap-3 rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 transition-colors hover:border-indigo-300 has-[:checked]:border-brand has-[:checked]:bg-subtle">
             <input type="radio" name="method" value={value} checked={method === value} onChange={() => setMethod(value)} className="accent-indigo-600" />
             {PAYMENT_METHOD_LABELS[value]}
           </label>
@@ -212,7 +223,7 @@ if (stage === "gateway") {
       </div>
 
       {errorBox}
-      <button disabled={busy || lower} onClick={startPayment} className={`${btn} w-full bg-indigo-600 py-3 text-white hover:bg-indigo-700`}>
+      <button disabled={busy || lower} onClick={startPayment} className={`${btn} btn-primary h-12 w-full text-base`}>
         {busy ? "Đang tạo giao dịch..." : `Tiếp tục thanh toán ${formatVND(plan.price)}`}
       </button>
     </div>

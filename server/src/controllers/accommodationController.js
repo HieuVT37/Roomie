@@ -4,6 +4,7 @@ import Favorite from "../models/Favorite.js";
 import Profile from "../models/Profile.js";
 import { getPlanLimits } from "../services/planService.js";
 import { httpError, asyncHandler } from "../utils/httpError.js";
+import { viRegex } from "../utils/query.js";
 
 const PUBLIC = { status: "available", moderationStatus: "approved" };
 const FIELDS = [
@@ -99,7 +100,8 @@ export const listAccommodations = asyncHandler(async (req, res) => {
   const filter = { ...PUBLIC };
 
   if (str(q.city)) filter["address.city"] = str(q.city);
-  if (str(q.district)) filter["address.district"] = str(q.district);
+  // Quận/huyện: tìm theo một phần tên, không phân biệt hoa thường, không cần gõ dấu
+  if (str(q.district)) filter["address.district"] = viRegex(str(q.district));
   if (str(q.roomType)) filter.roomType = str(q.roomType);
 
   const minPrice = num(q.minPrice);

@@ -7,6 +7,9 @@ import { SelectField, CheckField } from "../../components/FormControls";
 import {
   PASS_TYPE_LABELS, ITEM_CATEGORY_LABELS, CONDITION_LABELS, DEAL_LABELS, toOptions,
 } from "../../utils/labels";
+import { DetailSkeleton } from "../../components/ListStates";
+import Icon from "../../components/Icon";
+import { toast } from "../../components/fx/Toaster";
 
 const emptyForm = {
   type: "item", title: "", description: "", price: "", area: "", contact: "", images: [],
@@ -62,11 +65,11 @@ const toPayload = (f) => {
 };
 
 const textareaClass =
-  "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 outline-none focus:border-indigo-500 dark:border-gray-600 dark:bg-gray-800";
+  "input";
 
 function Section({ title, children }) {
   return (
-    <section className="space-y-4 rounded-2xl border border-gray-200 p-5 dark:border-gray-700">
+    <section className="card space-y-4 p-5 sm:p-6">
       <h2 className="text-lg font-semibold">{title}</h2>
       {children}
     </section>
@@ -115,6 +118,7 @@ export default function PassFormPage() {
     try {
       const payload = toPayload(form);
       const { listing } = editing ? await updatePassApi(id, payload) : await createPassApi(payload);
+      toast(editing ? "Đã lưu thay đổi" : "Đã đăng bài, đang chờ duyệt");
       navigate(`/pass/${listing.id}`);
     } catch (err) {
       setError(err.response?.data?.message || "Không thể kết nối máy chủ");
@@ -123,13 +127,13 @@ export default function PassFormPage() {
     }
   };
 
-  if (loading) return <p>Đang tải...</p>;
+  if (loading) return <DetailSkeleton />;
 
   return (
     <form onSubmit={handleSubmit} className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold">{editing ? "Chỉnh sửa bài Pass" : "Đăng bài Pass"}</h1>
+      <h1 className="text-3xl font-semibold">{editing ? "Chỉnh sửa bài Pass" : "Đăng bài Pass"}</h1>
 
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-300">{error}</p>}
+      {error && <p className="alert-error">{error}</p>}
 
       {!editing && (
         <div className="grid grid-cols-2 gap-3">
@@ -138,11 +142,13 @@ export default function PassFormPage() {
               key={value}
               type="button"
               onClick={() => set("type", value)}
-              className={`rounded-2xl border-2 p-4 text-center font-medium ${form.type === value
-                ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-950"
-                : "border-gray-200 dark:border-gray-700"}`}
+              aria-pressed={form.type === value}
+              className={`card flex flex-col items-center gap-2 p-5 font-medium transition-all active:scale-[0.98] ${form.type === value
+                ? "!border-brand ring-1 ring-brand text-brand"
+                : "hover:border-indigo-300"}`}
             >
-              {value === "room" ? "🏠" : "📦"} {label}
+              <Icon name={value === "room" ? "home" : "package"} size={24} />
+              {label}
             </button>
           ))}
         </div>
@@ -152,7 +158,7 @@ export default function PassFormPage() {
         <FormField label="Tiêu đề" id="title" value={form.title} onChange={onText} required minLength={3} maxLength={150}
           placeholder={isRoom ? "Pass phòng trọ 20m², còn 5 tháng hợp đồng" : "Bàn học gỗ + ghế, còn mới 90%"} />
         <div>
-          <label htmlFor="description" className="mb-1 block text-sm font-medium">Mô tả</label>
+          <label htmlFor="description" className="label">Mô tả</label>
           <textarea id="description" name="description" rows={4} value={form.description} onChange={onText} className={textareaClass} />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -179,7 +185,7 @@ export default function PassFormPage() {
             hint="Nên xác nhận với chủ nhà trước khi đăng để tránh tranh chấp"
             checked={form.landlordAgreed} onChange={(v) => set("landlordAgreed", v)} />
           <div>
-            <label htmlFor="transferTerms" className="mb-1 block text-sm font-medium">Điều khoản chuyển nhượng</label>
+            <label htmlFor="transferTerms" className="label">Điều khoản chuyển nhượng</label>
             <textarea id="transferTerms" name="transferTerms" rows={3} value={form.transferTerms} onChange={onText} className={textareaClass}
               placeholder="Bên nhận chuyển lại phần tiền cọc cho bên pass..." />
           </div>
@@ -200,10 +206,10 @@ export default function PassFormPage() {
 
       <div className="flex gap-3">
         <button type="submit" disabled={saving}
-          className="flex-1 rounded-lg bg-indigo-600 py-3 font-medium text-white hover:bg-indigo-700 disabled:opacity-60">
+          className="btn btn-primary h-12 flex-1 text-base">
           {saving ? "Đang lưu..." : editing ? "Lưu thay đổi" : "Đăng bài"}
         </button>
-        <button type="button" onClick={() => navigate(-1)} className="rounded-lg border border-gray-300 px-6 py-3 dark:border-gray-600">
+        <button type="button" onClick={() => navigate(-1)} className="btn btn-secondary h-12 px-6">
           Hủy
         </button>
       </div>

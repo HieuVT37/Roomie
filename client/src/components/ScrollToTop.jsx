@@ -10,9 +10,11 @@ export default function ScrollToTop() {
   const location = useLocation();
   const navType = useNavigationType();
 
+  const { key, pathname, search } = location;
+
   useLayoutEffect(() => {
     // Quay lại danh sách vừa xem: để trang danh sách tự cuộn đến thẻ đó
-    if (isReturningTo(location.pathname + location.search, navType)) return;
+    if (isReturningTo(pathname + search, navType)) return;
 
     const toTop = () => {
       window.scrollTo(0, 0);
@@ -22,7 +24,8 @@ export default function ScrollToTop() {
     toTop();
     const timers = [50, 150, 400].map((ms) => setTimeout(toTop, ms));
     return () => timers.forEach(clearTimeout);
-  }, [location.key]);
+    // pathname/search/navType chỉ đổi cùng lúc với key (mỗi lần điều hướng)
+  }, [key, pathname, search, navType]);
 
   return null;
 }

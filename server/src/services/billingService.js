@@ -36,8 +36,7 @@ export async function ensurePlanFresh(user) {
     { $set: { status: "expired" } }
   );
   await User.updateOne({ _id: user._id }, { $set: { currentPlan: "basic" } });
-  user.currentPlan = "basic";  await User.updateOne({ _id: userId }, { $set: { currentPlan: planCode } });
-  return sub;
+  user.currentPlan = "basic";
   return user;
 }
 

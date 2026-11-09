@@ -1,17 +1,29 @@
+import { flushSync } from "react-dom";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-import { useNotifications } from "../context/NotificationContext";
+import { useNotifications } from "../context/notificationStore";
 import { PLAN_LABELS } from "../utils/labels";
 import CountBadge from "./CountBadge";
 import Avatar from "./Avatar";
+import Icon from "./Icon";
+import { reducedMotion } from "../hooks/useMotion";
 
 const linkClass = ({ isActive }) =>
-  isActive ? "font-semibold text-indigo-600 dark:text-indigo-400" : "hover:text-indigo-600 dark:hover:text-indigo-400";
+  isActive
+    ? "font-semibold text-brand"
+    : "text-muted transition-colors hover:text-ink";
 
-// Menu trên banner (từ 768px) và menu ở đáy màn hình (điện thoại) dùng đệm khác nhau
-const rowItemClass = (state) => `${linkClass(state)} block whitespace-nowrap py-2 text-base`;
-const barItemClass = (state) => `${linkClass(state)} block px-1 py-2.5 text-center text-base leading-tight`;
+// Menu trên banner (từ 768px): dạng "viên thuốc", mục đang mở có nền xanh nhạt
+const rowItemClass = (state) =>
+  `${linkClass(state)} block whitespace-nowrap rounded-full px-3 py-1.5 text-[0.9375rem] ${
+    state.isActive ? "bg-subtle" : "hover:bg-subtle"
+  }`;
+// Menu ở đáy màn hình (điện thoại): vạch xanh phía trên mục đang mở
+const barItemClass = (state) =>
+  `${linkClass(state)} relative block px-1 py-2.5 text-center text-sm leading-tight ${
+    state.isActive ? "before:absolute before:inset-x-4 before:top-0 before:h-0.5 before:rounded-full before:bg-brand" : ""
+  }`;
 
 export default function Navbar() {
   const { user, profile, logout } = useAuth();
@@ -20,6 +32,21 @@ export default function Navbar() {
   const unread = useNotifications();
   const isAdmin = user?.role === "admin";
   const displayName = profile?.displayName || user?.email || "";
+
+  const switchTheme = (e) => {
+    if (!document.startViewTransition || reducedMotion()) {
+      toggleTheme();
+      return;
+    }
+    const root = document.documentElement;
+    root.style.setProperty("--vt-x", `${e.clientX}px`);
+    root.style.setProperty("--vt-y", `${e.clientY}px`);
+    const next = theme === "dark" ? "light" : "dark";
+    document.startViewTransition(() => {
+      root.classList.toggle("dark", next === "dark"); // đổi ngay trong khung chuyển cảnh
+      flushSync(toggleTheme);
+    });
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -36,14 +63,15 @@ export default function Navbar() {
 
     { to: "/pricing", label: "Gói dịch vụ" },
     { to: "/help", label: "Hỗ trợ" },
-    isAdmin && { to: "/admin", label: "⚙️ Quản trị" },
+    isAdmin && { to: "/admin", label: "Quản trị", icon: "settings" },
   ].filter(Boolean);
 
   const renderItems = (itemClass, liClass) =>
     links.map((l) => (
       <li key={l.to} className={liClass}>
         <NavLink to={l.to} end={l.end} className={itemClass}>
-          <span className="relative inline-block">
+          <span className="relative inline-flex items-center gap-1.5">
+            {l.icon && <Icon name={l.icon} size={16} />}
             {l.label}
             {l.badge && <CountBadge count={unread[l.badge]} />}
           </span>
@@ -53,28 +81,29 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/90 px-4 py-3 backdrop-blur dark:border-gray-700 dark:bg-gray-900/90 sm:px-6 sm:py-4">
-        {/* max-w-6xl: cùng chiều rộng với các khối nội dung bên dưới */}
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 max-md:flex-nowrap xl:flex-nowrap">
-          <Link to="/" className="order-1 text-lg font-bold text-indigo-600 dark:text-indigo-400">
+      <header className="sticky top-0 z-50 border-b border-line bg-surface/85 backdrop-blur-md supports-[backdrop-filter]:bg-surface/75">
+        {/* Cùng lề trái/phải với nội dung và chân trang (.container-page) */}
+        <div className="container-page flex flex-wrap items-center gap-x-6 gap-y-1 py-3 max-md:flex-nowrap xl:flex-nowrap">
+          <Link to="/" className="order-1 flex shrink-0 items-center gap-2 rounded-lg text-lg font-semibold tracking-tight text-ink">
+            <img src="/roomie-logo.svg" alt="" width="30" height="30" className="rounded-[0.5rem]" />
             Roomie
           </Link>
 
           {/* Menu: ẩn ở điện thoại; 768px–1279px nằm ở hàng thứ hai; từ 1280px nằm cùng một dòng giữa logo và Đăng xuất */}
-          <nav aria-label="Menu chính" className="order-3 hidden w-full md:block xl:order-2 xl:w-auto xl:flex-1">
-            <ul className="flex w-full items-center justify-between xl:justify-evenly xl:gap-x-2">
+          <nav aria-label="Menu chính" className="order-3 -mx-3 hidden w-full md:block xl:order-2 xl:mx-0 xl:w-auto xl:flex-1">
+            <ul className="flex w-full items-center justify-between xl:justify-center xl:gap-x-0.5">
               {renderItems(rowItemClass, "shrink-0")}
             </ul>
           </nav>
 
           <div className="order-2 ml-auto flex items-center gap-2 md:gap-3 xl:order-3 xl:ml-0">
             <button
-              onClick={toggleTheme}
+              onClick={switchTheme}
               aria-label="Đổi giao diện sáng hoặc tối"
-              className="rounded-lg border border-gray-300 px-3 py-1 text-sm dark:border-gray-600"
+              title={theme === "dark" ? "Giao diện sáng" : "Giao diện tối"}
+              className="btn btn-ghost btn-sm h-10 w-10 !px-0"
             >
-              <span aria-hidden="true">{theme === "dark" ? "☀️" : "🌙"}</span>
-              <span className="ml-1 hidden md:inline">{theme === "dark" ? "Sáng" : "Tối"}</span>
+              <Icon name={theme === "dark" ? "sun" : "moon"} />
             </button>
 
             {user ? (
@@ -82,34 +111,35 @@ export default function Navbar() {
                 <Link
                   to="/billing"
                   title="Gói của bạn"
-                  className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200"
+                  className="rounded-full border border-indigo-200 bg-subtle px-2.5 py-0.5 text-xs font-semibold text-indigo-700 transition-colors hover:border-indigo-300 dark:border-indigo-800 dark:text-brand"
                 >
                   {PLAN_LABELS[user.currentPlan] || user.currentPlan}
                 </Link>
 
                 {/* Điện thoại: chỉ ảnh đại diện (chữ cái đầu nếu chưa có ảnh); từ 768px: tên đầy đủ */}
-                <Link to="/profile" title={displayName} className="md:hidden">
+                <Link to="/profile" title={displayName} className="rounded-full md:hidden">
                   <Avatar src={profile?.avatarUrl} name={displayName} size={32} />
                 </Link>
                 <NavLink
                   to="/profile"
                   title={displayName}
-                  className={(state) => `${linkClass(state)} hidden max-w-[10rem] truncate text-sm md:block xl:max-w-[7rem]`}
+                  className={(state) =>
+                    `${linkClass(state)} hidden max-w-[10rem] items-center gap-2 text-sm md:flex xl:max-w-[9rem]`
+                  }
                 >
-                  {displayName}
+                  <Avatar src={profile?.avatarUrl} name={displayName} size={28} />
+                  <span className="truncate">{displayName}</span>
                 </NavLink>
 
-                <button
-                  onClick={handleLogout}
-                  className="rounded-lg bg-gray-900 px-3 py-1 text-sm text-white dark:bg-gray-100 dark:text-gray-900"
-                >
+                <button onClick={handleLogout} className="btn btn-secondary btn-sm" title="Đăng xuất">
+                  <Icon name="logout" size={16} className="max-sm:hidden" />
                   Đăng xuất
                 </button>
               </>
             ) : (
               <>
-                <NavLink to="/login" className={linkClass}>Đăng nhập</NavLink>
-                <Link to="/register" className="rounded-lg bg-indigo-600 px-3 py-1 text-sm text-white hover:bg-indigo-700">
+                <NavLink to="/login" className={(state) => `${linkClass(state)} text-[0.9375rem]`}>Đăng nhập</NavLink>
+                <Link to="/register" className="btn btn-primary btn-sm">
                   Đăng ký
                 </Link>
               </>
@@ -118,12 +148,12 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* Thanh menu cố định ở đáy màn hình (chỉ điện thoại): tự xuống dòng, mỗi dòng 5 mục, không cuộn ngang.
+      {/* Thanh menu cố định ở đáy màn hình (chỉ điện thoại): tự xuống dòng, mỗi dòng 4 mục, không cuộn ngang.
           Đặt NGOÀI <header> để "fixed" tính theo màn hình */}
       <nav
         aria-label="Menu chính (điện thoại)"
-        className="fixed inset-x-0 bottom-0 z-50 transform-gpu border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden dark:border-gray-700 dark:bg-gray-900">
-        <ul className="flex flex-wrap justify-center px-1 py-1">
+        className="bottom-bar fixed inset-x-0 bottom-0 z-50 transform-gpu border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
+        <ul className="flex flex-wrap justify-center px-1">
           {renderItems(barItemClass, "basis-1/4")}
         </ul>
       </nav>

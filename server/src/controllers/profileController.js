@@ -12,6 +12,7 @@ const PREF_FIELDS = [
   "interests", "requirements", "weights", "dealBreakers",
 ];
 const MISSING_LABELS = {
+  gender: "giới tính (Nam hoặc Nữ)",
   preferences: "tiêu chí sống chung",
   city: "thành phố",
   locations: "khu vực mong muốn",
@@ -39,7 +40,10 @@ export const updateMyProfile = asyncHandler(async (req, res) => {
   // Muốn bật "đang tìm bạn cùng phòng" thì phải điền đủ tiêu chí cơ bản
   const willLook = update.isLookingForRoommate ?? current.isLookingForRoommate;
   if (willLook) {
-    const missing = missingForMatching({ preferences: update.preferences ?? current.preferences });
+    const missing = missingForMatching({
+      gender: update.gender !== undefined ? update.gender : current.gender,
+      preferences: update.preferences ?? current.preferences,
+    });
     if (missing.length) {
       const names = missing.map((m) => MISSING_LABELS[m] || m).join(", ");
       throw httpError(422, `Cần điền đủ để tham gia Matching: ${names}`, "PROFILE_INCOMPLETE");

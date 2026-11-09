@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { listPassApi } from "../../api/pass";
@@ -9,6 +9,11 @@ import { useRestoreLastViewed, useReturnState } from "../../utils/lastViewed";
 import {
   PASS_TYPE_LABELS, ITEM_CATEGORY_LABELS, CONDITION_LABELS, DEAL_LABELS, toOptions,
 } from "../../utils/labels";
+import Pagination from "../../components/Pagination";
+import { CardSkeletons, EmptyState } from "../../components/ListStates";
+import Icon from "../../components/Icon";
+import useRequestStatus from "../../hooks/useRequestStatus";
+import { useTabDirection, useTabIndicator } from "../../hooks/useMotion";
 
 const initialFilters = {
   type: "", q: "", area: "", minPrice: "", maxPrice: "", category: "", condition: "", dealType: "", sort: "newest",
@@ -21,26 +26,29 @@ const TABS = [
 ];
 
 export default function PassListPage() {
+  const tabsRef = useRef(null);
   const { user } = useAuth();
   const [filters, setFilters] = useReturnState("pass:filters", initialFilters);
   const [page, setPage] = useReturnState("pass:page", 1);
   const [draft, setDraft] = useState(filters);
   const [data, setData] = useState({ items: [], total: 0, pages: 1 });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+
+  // Đang tải/lỗi suy ra từ khóa yêu cầu (không setState đồng bộ trong effect)
+  const { loading, error, finish } = useRequestStatus(JSON.stringify([page, filters]));
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setError("");
     listPassApi({ ...filters, page, limit: 12 })
-      .then((res) => active && setData(res))
-      .catch((err) => active && setError(err.response?.data?.message || "Không thể kết nối máy chủ"))
-      .finally(() => active && setLoading(false));
+      .then((res) => {
+        if (!active) return;
+        setData(res);
+        finish();
+      })
+      .catch((err) => active && finish(err.response?.data?.message || "Không thể kết nối máy chủ"));
     return () => {
       active = false;
     };
-  }, [page, filters]);
+  }, [page, filters, finish]);
 
   const onText = (e) => setDraft((d) => ({ ...d, [e.target.name]: e.target.value }));
 
@@ -67,39 +75,45 @@ export default function PassListPage() {
 
   useRestoreLastViewed(!loading);
 
+
+  // Gạch chân trượt theo tab, nội dung trượt ngang theo hướng tab được chọn
+  const tabIndex = TABS.findIndex((t) => t.value === filters.type);
+  useTabIndicator(tabsRef, tabIndex);
+  const tabDir = useTabDirection(tabIndex);
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Pass phòng & đồ dùng</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{data.total} bài đang đăng</p>
+          <h1 className="text-3xl font-semibold">Pass phòng & đồ dùng</h1>
+          <p className="text-sm text-muted">{data.total} bài đang đăng</p>
         </div>
         {user ? (
           <div className="flex gap-2">
-            <Link to="/my-pass" className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600">Bài của tôi</Link>
-            <Link to="/pass/new" className="rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700">+ Đăng bài</Link>
+            <Link to="/my-pass" className="btn btn-secondary">Bài của tôi</Link>
+            <Link to="/pass/new" className="btn btn-primary"><Icon name="plus" size={18} />Đăng bài</Link>
           </div>
         ) : (
-          <Link to="/login" className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600">Đăng nhập để đăng bài</Link>
+          <Link to="/login" className="btn btn-secondary">Đăng nhập để đăng bài</Link>
         )}
       </div>
 
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
+      <div ref={tabsRef} role="tablist" className="tablist flex gap-1 overflow-x-auto border-b border-line">
         {TABS.map((t) => (
           <button
             key={t.value}
             onClick={() => changeType(t.value)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm ${filters.type === t.value
-              ? "border-indigo-600 font-semibold text-indigo-600 dark:text-indigo-400"
-              : "border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-gray-100"}`}
+            role="tab"
+            aria-selected={filters.type === t.value}
+            className="tab whitespace-nowrap"
           >
             {t.label}
           </button>
         ))}
+        <span aria-hidden="true" className="tab-indicator" />
       </div>
 
-      <form onSubmit={apply} className="space-y-4 rounded-2xl border border-gray-200 p-4 dark:border-gray-700">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <form onSubmit={apply} className="card filter-panel space-y-5 p-5 sm:p-6">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:gap-x-4 lg:grid-cols-4">
           <FormField label="Từ khóa" id="q" value={draft.q} onChange={onText} placeholder="Bàn học, tủ lạnh..." />
           <FormField label="Khu vực" id="area" value={draft.area} onChange={onText} placeholder="Thanh Xuân" />
           <FormField label="Giá từ (VNĐ)" id="minPrice" type="number" min="0" step="10000" value={draft.minPrice} onChange={onText} />
@@ -122,30 +136,22 @@ export default function PassListPage() {
             ]} />
         </div>
         <div className="flex gap-3">
-          <button type="submit" className="rounded-lg bg-indigo-600 px-5 py-2 font-medium text-white hover:bg-indigo-700">Tìm kiếm</button>
-          <button type="button" onClick={reset} className="rounded-lg border border-gray-300 px-5 py-2 dark:border-gray-600">Xóa bộ lọc</button>
+          <button type="submit" className="btn btn-primary px-5"><Icon name="search" size={17} />Tìm kiếm</button>
+          <button type="button" onClick={reset} className="btn btn-secondary px-5">Xóa bộ lọc</button>
         </div>
       </form>
 
-      {loading && <p>Đang tải...</p>}
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-red-600 dark:bg-red-950 dark:text-red-300">{error}</p>}
-      {!loading && !error && data.items.length === 0 && <p>Không có bài đăng nào phù hợp.</p>}
+      {loading && <CardSkeletons />}
+      {error && <p className="alert-error">{error}</p>}
+      {!loading && !error && data.items.length === 0 && <EmptyState icon="package">Không có bài đăng nào phù hợp.</EmptyState>}
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div data-dir={tabDir} className={`stagger grid gap-5 sm:grid-cols-2 lg:grid-cols-3 ${loading ? "hidden" : ""}`}>
         {data.items.map((item) => (
           <PassCard key={`${item.id}-${item.isFavorite}`} item={item} />
         ))}
       </div>
 
-      {data.pages > 1 && (
-        <div className="flex items-center justify-center gap-4">
-          <button disabled={page <= 1} onClick={() => setPage(page - 1)}
-            className="rounded-lg border border-gray-300 px-3 py-1 disabled:opacity-40 dark:border-gray-600">← Trước</button>
-          <span className="text-sm">Trang {page}/{data.pages}</span>
-          <button disabled={page >= data.pages} onClick={() => setPage(page + 1)}
-            className="rounded-lg border border-gray-300 px-3 py-1 disabled:opacity-40 dark:border-gray-600">Sau →</button>
-        </div>
-      )}
+      <Pagination page={page} pages={data.pages} onChange={setPage} />
     </div>
   );
 }

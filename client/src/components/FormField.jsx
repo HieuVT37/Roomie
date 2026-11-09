@@ -1,15 +1,20 @@
-export default function FormField({ label, id, ...props }) {
+// Ô nhập có nhãn. `floating`: nhãn nằm trong ô và thu nhỏ bay lên khi gõ (dùng ở đăng nhập / đăng ký).
+export default function FormField({ label, id, floating = false, ...props }) {
+  if (floating) {
+    return (
+      <div className="float-field">
+        {/* placeholder=" " để CSS biết ô đang trống (:placeholder-shown) */}
+        <input id={id} name={id} {...props} placeholder=" " className="input" />
+        <label htmlFor={id}>{label}</label>
+      </div>
+    );
+  }
   return (
     <div>
-      <label htmlFor={id} className="mb-1 block text-sm font-medium">
+      <label htmlFor={id} className="label">
         {label}
       </label>
-      <input
-        id={id}
-        name={id}
-        {...props}
-        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-gray-600 dark:bg-gray-800 dark:focus:ring-indigo-900"
-      />
+      <input id={id} name={id} {...props} className="input" />
     </div>
   );
 }

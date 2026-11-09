@@ -3,10 +3,12 @@ import { Link } from "react-router-dom";
 import {
   sendRequestApi, cancelApi, acceptApi, rejectApi, disconnectApi, blockApi, unblockApi,
 } from "../api/connections";
+import { confettiFrom } from "./fx/confetti";
+import { toast } from "./fx/Toaster";
 
-const btn = "rounded-lg px-4 py-2 font-medium disabled:opacity-60";
-const primary = `${btn} bg-indigo-600 text-white hover:bg-indigo-700`;
-const outline = `${btn} border border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800`;
+const btn = "btn";
+const primary = `${btn} btn-primary`;
+const outline = `${btn} btn-secondary`;
 
 export default function ConnectPanel({ userId, relation, onChange }) {
   const [message, setMessage] = useState("");
@@ -15,11 +17,12 @@ export default function ConnectPanel({ userId, relation, onChange }) {
   const status = relation?.status || "none";
   const connectionId = relation?.connectionId;
 
-  const run = async (action, next) => {
+  const run = async (action, next, onSuccess) => {
     setBusy(true);
     setError("");
     try {
       const data = await action();
+      onSuccess?.();
       onChange(next(data));
       setMessage("");
     } catch (err) {
@@ -35,9 +38,9 @@ export default function ConnectPanel({ userId, relation, onChange }) {
   };
 
   return (
-    <div className="space-y-3 rounded-2xl border border-gray-200 p-5 dark:border-gray-700">
+    <div className="space-y-3 card p-5 sm:p-6">
       {error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-300">{error}</p>
+        <p className="alert-error">{error}</p>
       )}
 
       {status === "none" && (
@@ -48,7 +51,7 @@ export default function ConnectPanel({ userId, relation, onChange }) {
             maxLength={300}
             rows={2}
             placeholder="Lời nhắn làm quen (tùy chọn)"
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 outline-none focus:border-indigo-500 dark:border-gray-600 dark:bg-gray-800"
+            className="input"
           />
           <button
             disabled={busy}
@@ -75,7 +78,13 @@ export default function ConnectPanel({ userId, relation, onChange }) {
           <span>Người này muốn kết nối với bạn</span>
           <div className="flex gap-2">
             <button disabled={busy} className={primary}
-              onClick={() => run(() => acceptApi(connectionId), () => ({ status: "accepted", connectionId }))}>
+              onClick={(e) => {
+                const btn = e.currentTarget;
+                run(() => acceptApi(connectionId), () => ({ status: "accepted", connectionId }), () => {
+                  confettiFrom(btn);
+                  toast("Đã chấp nhận kết nối");
+                });
+              }}>
               Chấp nhận
             </button>
             <button disabled={busy} className={outline}

@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { listFavoritesApi } from "../../api/favorites";
 import AccommodationCard from "../../components/AccommodationCard";
 import PassCard from "../../components/PassCard";
 import { useRestoreLastViewed, useReturnState } from "../../utils/lastViewed";
+import { CardSkeletons, EmptyState } from "../../components/ListStates";
+import useRequestStatus from "../../hooks/useRequestStatus";
+import { useTabDirection, useTabIndicator } from "../../hooks/useMotion";
 
 const TABS = [
   { value: "accommodation", label: "Phòng trọ", link: "/accommodation" },
@@ -11,23 +14,26 @@ const TABS = [
 ];
 
 export default function FavoritesPage() {
+  const tabsRef = useRef(null);
   const [tab, setTab] = useReturnState("favorites:tab", "accommodation");
   const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+
+  // Đang tải/lỗi suy ra từ khóa yêu cầu (không setState đồng bộ trong effect)
+  const { loading, error, finish } = useRequestStatus(JSON.stringify([tab]));
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setError("");
     listFavoritesApi(tab)
-      .then((res) => active && setItems(res.items))
-      .catch((err) => active && setError(err.response?.data?.message || "Không thể kết nối máy chủ"))
-      .finally(() => active && setLoading(false));
+      .then((res) => {
+        if (!active) return;
+        setItems(res.items);
+        finish();
+      })
+      .catch((err) => active && finish(err.response?.data?.message || "Không thể kết nối máy chủ"));
     return () => {
       active = false;
     };
-  }, [tab]);
+  }, [tab, finish]);
 
   // Bỏ tim thì gỡ thẻ khỏi danh sách ngay
   const handleToggle = (id, isFav) => {
@@ -38,34 +44,39 @@ export default function FavoritesPage() {
   const current = TABS.find((t) => t.value === tab);
   const Card = tab === "pass" ? PassCard : AccommodationCard;
 
-  return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <h1 className="text-2xl font-bold">Yêu thích</h1>
 
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
+  // Gạch chân trượt theo tab, nội dung trượt ngang theo hướng tab được chọn
+  const tabIndex = TABS.findIndex((t) => t.value === tab);
+  useTabIndicator(tabsRef, tabIndex);
+  const tabDir = useTabDirection(tabIndex);
+  return (
+    <div className="space-y-8">
+      <h1 className="text-3xl font-semibold">Yêu thích</h1>
+
+      <div ref={tabsRef} role="tablist" className="tablist flex gap-1 overflow-x-auto border-b border-line">
         {TABS.map((t) => (
           <button
             key={t.value}
             onClick={() => setTab(t.value)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm ${tab === t.value
-              ? "border-indigo-600 font-semibold text-indigo-600 dark:text-indigo-400"
-              : "border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-gray-100"}`}
+            role="tab"
+            aria-selected={tab === t.value}
+            className="tab whitespace-nowrap"
           >
             {t.label}
           </button>
         ))}
+        <span aria-hidden="true" className="tab-indicator" />
       </div>
 
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-red-600 dark:bg-red-950 dark:text-red-300">{error}</p>}
-      {loading && <p>Đang tải...</p>}
+      {error && <p className="alert-error">{error}</p>}
+      {loading && <CardSkeletons />}
       {!loading && !error && items.length === 0 && (
-        <p>
-          Bạn chưa lưu mục nào.{" "}
-          <Link to={current.link} className="text-indigo-600 hover:underline dark:text-indigo-400">Xem ngay →</Link>
-        </p>
+        <EmptyState icon="heart" action={<Link to={current.link} className="btn btn-primary btn-sm mt-2">Xem ngay</Link>}>
+          Bạn chưa lưu mục nào.
+        </EmptyState>
       )}
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div data-dir={tabDir} className={`stagger grid gap-5 sm:grid-cols-2 lg:grid-cols-3 ${loading ? "hidden" : ""}`}>
         {items.map((item) => (
           <Card key={item.id} item={item} onFavoriteChange={handleToggle} />
         ))}

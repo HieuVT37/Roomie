@@ -9,9 +9,12 @@ const scale = (path, label) =>
 export const profileRules = [
   body("displayName").optional().trim().notEmpty().withMessage("Tên hiển thị không được để trống")
     .isLength({ max: 60 }).withMessage("Tên hiển thị tối đa 60 ký tự"),
-  body("avatarUrl").optional({ nullable: true }).isURL().withMessage("Ảnh đại diện phải là đường dẫn hợp lệ"),
+  // Ảnh đại diện: ảnh tải lên qua /api/uploads/images; vẫn chấp nhận link cũ của hồ sơ trước đây
+  body("avatarUrl").optional({ nullable: true })
+    .custom((v) => ROOM_PHOTO_RE.test(v) || /^https?:\/\/\S+$/.test(v))
+    .withMessage("Ảnh đại diện không hợp lệ"),
   body("bio").optional().isLength({ max: 500 }).withMessage("Giới thiệu tối đa 500 ký tự"),
-  body("gender").optional({ nullable: true }).isIn(["male", "female", "other", "private"]).withMessage("Giới tính không hợp lệ"),
+  body("gender").optional({ nullable: true }).isIn(["male", "female"]).withMessage("Giới tính chỉ được chọn Nam hoặc Nữ"),
   body("birthYear").optional({ nullable: true })
     .isInt({ min: 1950, max: new Date().getFullYear() - 16 }).withMessage("Năm sinh không hợp lệ").toInt(),
   body("school").optional({ nullable: true }).isLength({ max: 100 }).withMessage("Tên trường tối đa 100 ký tự"),

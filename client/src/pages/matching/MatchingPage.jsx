@@ -4,44 +4,48 @@ import { listMatchesApi } from "../../api/matching";
 import ProfileCard from "../../components/ProfileCard";
 import FormField from "../../components/FormField";
 import { SelectField } from "../../components/FormControls";
-import { GENDER_LABELS, toOptions } from "../../utils/labels";
 import { useRestoreLastViewed, useReturnState } from "../../utils/lastViewed";
+import Pagination from "../../components/Pagination";
+import { EmptyState } from "../../components/ListStates";
+import Icon from "../../components/Icon";
+import useRequestStatus from "../../hooks/useRequestStatus";
 
-const initialFilters = { q: "", location: "", gender: "", minScore: "0" };
+const initialFilters = { q: "", location: "", minScore: "0" };
 
 export default function MatchingPage() {
   const [filters, setFilters] = useReturnState("matching:filters", initialFilters);
   const [page, setPage] = useReturnState("matching:page", 1);
   const [draft, setDraft] = useState(filters);
   const [data, setData] = useState({ items: [], total: 0, pages: 1 });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+
+  // Đang tải/lỗi suy ra từ khóa yêu cầu (không setState đồng bộ trong effect)
+  const { loading, error, finish } = useRequestStatus(JSON.stringify([page, filters]), null);
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setError(null);
     listMatchesApi({
       page,
       limit: 12,
       q: filters.q,
       location: filters.location,
-      gender: filters.gender,
       minScore: filters.minScore,
     })
-      .then((res) => active && setData(res))
+      .then((res) => {
+        if (!active) return;
+        setData(res);
+        finish();
+      })
       .catch((err) =>
         active &&
-        setError({
+        finish({
           code: err.response?.data?.code,
           message: err.response?.data?.message || "Không thể kết nối máy chủ",
         })
-      )
-      .finally(() => active && setLoading(false));
+      );
     return () => {
       active = false;
     };
-  }, [page, filters]);
+  }, [page, filters, finish]);
 
   const set = (name, value) => setDraft((d) => ({ ...d, [name]: value }));
   const onText = (e) => set(e.target.name, e.target.value);
@@ -63,22 +67,21 @@ export default function MatchingPage() {
   useRestoreLastViewed(!loading && !error);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Gợi ý bạn cùng phòng</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <h1 className="text-3xl font-semibold">Gợi ý bạn cùng phòng</h1>
+        <p className="text-sm text-muted">
           Tỷ lệ Compatible là chỉ số ước tính từ hồ sơ, không đảm bảo hai người chắc chắn hòa hợp.
+          Roomie chỉ gợi ý người cùng giới tính với bạn.
         </p>
       </div>
 
-      <form onSubmit={applyFilters} className="space-y-4 rounded-2xl border border-gray-200 p-4 dark:border-gray-700">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <form onSubmit={applyFilters} className="card filter-panel space-y-5 p-5 sm:p-6">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:gap-x-4 lg:grid-cols-4">
           <FormField label="Mô tả" id="q" value={draft.q} onChange={onText}
             placeholder="Mô tả bản thân" maxLength={100} />
           <FormField label="Khu vực" id="location" value={draft.location} onChange={onText}
             placeholder="Cầu Giấy" />
-          <SelectField label="Giới tính" id="gender" value={draft.gender} onChange={onText}
-            placeholder="Tất cả" options={toOptions(GENDER_LABELS)} />
           <SelectField label="Điểm tối thiểu" id="minScore" value={draft.minScore} onChange={onText}
             options={[
               { value: "0", label: "Tất cả" },
@@ -89,10 +92,11 @@ export default function MatchingPage() {
         </div>
 
         <div className="flex gap-3">
-          <button type="submit" className="rounded-lg bg-indigo-600 px-5 py-2 font-medium text-white hover:bg-indigo-700">
+          <button type="submit" className="btn btn-primary px-5">
+            <Icon name="search" size={17} />
             Tìm kiếm
           </button>
-          <button type="button" onClick={reset} className="rounded-lg border border-gray-300 px-5 py-2 dark:border-gray-600">
+          <button type="button" onClick={reset} className="btn btn-secondary px-5">
             Xóa bộ lọc
           </button>
         </div>
@@ -101,38 +105,30 @@ export default function MatchingPage() {
       {loading && <p>Đang tìm người phù hợp...</p>}
 
       {!loading && needProfile && (
-        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-6 dark:border-indigo-900 dark:bg-indigo-950">
+        <div className="rounded-[1.25rem] border border-indigo-200 bg-surface p-6 dark:border-indigo-900">
           <p className="mb-3">{error.message}</p>
-          <Link to="/profile" className="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Đến hồ sơ của tôi</Link>
+          <Link to="/profile" className="btn btn-primary">Đến hồ sơ của tôi</Link>
         </div>
       )}
 
       {!loading && error && !needProfile && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-red-600 dark:bg-red-950 dark:text-red-300">{error.message}</p>
+        <p className="alert-error">{error.message}</p>
       )}
 
       {!loading && !error && (
         <>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{data.total} kết quả</p>
+          <p className="text-sm text-muted">{data.total} kết quả</p>
           {data.items.length === 0 ? (
-            <p>Không có hồ sơ nào phù hợp với bộ lọc.</p>
+            <EmptyState icon="users">Không có hồ sơ nào phù hợp với bộ lọc.</EmptyState>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="stagger grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {data.items.map((item) => (
                 <ProfileCard key={item.userId} item={item} />
               ))}
             </div>
           )}
 
-          {data.pages > 1 && (
-            <div className="flex items-center justify-center gap-4">
-              <button disabled={page <= 1} onClick={() => setPage(page - 1)}
-                className="rounded-lg border border-gray-300 px-3 py-1 disabled:opacity-40 dark:border-gray-600">← Trước</button>
-              <span className="text-sm">Trang {page}/{data.pages}</span>
-              <button disabled={page >= data.pages} onClick={() => setPage(page + 1)}
-                className="rounded-lg border border-gray-300 px-3 py-1 disabled:opacity-40 dark:border-gray-600">Sau →</button>
-            </div>
-          )}
+          <Pagination page={page} pages={data.pages} onChange={setPage} />
         </>
       )}
     </div>

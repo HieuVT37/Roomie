@@ -9,6 +9,7 @@ import FormField from "../../components/FormField";
 import Pagination from "../../components/Pagination";
 import { SelectField } from "../../components/FormControls";
 import { PLAN_LABELS, USER_STATUS_LABELS, toOptions } from "../../utils/labels";
+import useRequestStatus from "../../hooks/useRequestStatus";
 
 const initial = { q: "", role: "", status: "", plan: "", landlord: "" };
 const STATUS_COLOR = {
@@ -23,26 +24,29 @@ export default function AdminUsersPage() {
   const [filters, setFilters] = useState(initial);
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ items: [], total: 0, pages: 1 });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [planForm, setPlanForm] = useState(null); // { id, planCode, days }
 
+  // Đang tải/lỗi suy ra từ khóa yêu cầu (không setState đồng bộ trong effect)
+  const { loading, error, finish, setError } = useRequestStatus(JSON.stringify([page, filters]));
+
   useEffect(() => {
     let active = true;
-    setLoading(true);
     adminUsersApi({ ...filters, page })
-      .then((res) => active && setData(res))
+      .then((res) => {
+        if (!active) return;
+        setData(res);
+        finish();
+      })
       .catch(
         (err) =>
           active &&
-          setError(err.response?.data?.message || "Không thể kết nối máy chủ"),
-      )
-      .finally(() => active && setLoading(false));
+          finish(err.response?.data?.message || "Không thể kết nối máy chủ"),
+      );
     return () => {
       active = false;
     };
-  }, [page, filters]);
+  }, [page, filters, finish]);
 
   useEffect(() => {
     if (!notice) return;
@@ -54,7 +58,7 @@ export default function AdminUsersPage() {
     if (!error) return;
     const timer = setTimeout(() => setError(""), 6000);
     return () => clearTimeout(timer);
-  }, [error]);
+  }, [error, setError]);
 
   const onText = (e) =>
     setDraft((d) => ({ ...d, [e.target.name]: e.target.value }));
@@ -136,7 +140,7 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">
+      <h1 className="text-3xl font-semibold">
         Người dùng{" "}
         <span className="text-base font-normal text-gray-500">
           ({data.total})
@@ -145,7 +149,7 @@ export default function AdminUsersPage() {
 
       <form
         onSubmit={apply}
-        className="grid items-end gap-4 rounded-2xl border border-gray-200 p-4 dark:border-gray-700 sm:grid-cols-3 lg:grid-cols-6"
+        className="grid items-end gap-4 card p-5 sm:p-6 sm:grid-cols-3 lg:grid-cols-6"
       >
         <div className="sm:col-span-3 lg:col-span-2">
           <FormField
@@ -195,34 +199,34 @@ export default function AdminUsersPage() {
         />
         <button
           type="submit"
-          className="rounded-lg bg-indigo-600 py-2 font-medium text-white hover:bg-indigo-700"
+          className="btn btn-primary"
         >
           Lọc
         </button>
       </form>
 
       {error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-300">
+        <p className="alert-error">
           {error}
         </p>
       )}
       {notice && (
-        <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-950 dark:text-green-300">
+        <p className="alert-success">
           {notice}
         </p>
       )}
-      {loading && <p>Đang tải...</p>}
+      {loading && <div className="skeleton h-40" aria-busy="true" aria-label="Đang tải" />}
 
-      <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-700">
-        <table className="w-full whitespace-nowrap text-left text-sm">
-          <thead className="bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+      <div className="table-wrap">
+        <table className="data-table">
+          <thead>
             <tr>
-              <th className="px-4 py-3">Người dùng</th>
-              <th className="px-4 py-3">Gói</th>
-              <th className="px-4 py-3">Trạng thái</th>
-              <th className="px-4 py-3">Chủ trọ</th>
-              <th className="px-4 py-3">Đăng nhập</th>
-              <th className="px-4 py-3">Thao tác</th>
+              <th>Người dùng</th>
+              <th>Gói</th>
+              <th>Trạng thái</th>
+              <th>Chủ trọ</th>
+              <th>Đăng nhập</th>
+              <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -231,9 +235,9 @@ export default function AdminUsersPage() {
                 key={u.id}
                 className="border-t border-gray-100 align-top dark:border-gray-800"
               >
-                <td className="px-4 py-3">
+                <td>
                   <p className="font-medium">{u.displayName}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-muted">
                     {u.email}
                   </p>
                   {u.role === "admin" && (
@@ -242,19 +246,19 @@ export default function AdminUsersPage() {
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3">{PLAN_LABELS[u.currentPlan]}</td>
+                <td>{PLAN_LABELS[u.currentPlan]}</td>
                 <td
                   className={`px-4 py-3 font-medium ${STATUS_COLOR[u.status]}`}
                 >
                   {USER_STATUS_LABELS[u.status]}
                 </td>
-                <td className="px-4 py-3">{u.isLandlord ? "Có" : "—"}</td>
-                <td className="px-4 py-3 text-xs">
+                <td>{u.isLandlord ? "Có" : "—"}</td>
+                <td className="text-xs">
                   {u.lastLoginAt
                     ? new Date(u.lastLoginAt).toLocaleString("vi-VN")
                     : "Chưa đăng nhập"}
                 </td>
-                <td className="px-4 py-3">
+                <td>
                   {u.role === "admin" ? (
                     <span className="text-xs text-gray-400">
                       Không thể thay đổi
@@ -265,7 +269,7 @@ export default function AdminUsersPage() {
                         <select
                           value={u.status}
                           onChange={(e) => changeStatus(u, e.target.value)}
-                          className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-800"
+                          className="input !min-h-9 w-auto !py-1 text-sm"
                         >
                           {["active", "suspended", "banned"].map((s) => (
                             <option key={s} value={s}>
@@ -276,7 +280,7 @@ export default function AdminUsersPage() {
                         </select>
                         <button
                           onClick={() => toggleLandlord(u)}
-                          className="rounded-lg border border-gray-300 px-2 py-1 text-xs dark:border-gray-600"
+                          className="btn btn-secondary btn-sm"
                         >
                           {u.isLandlord
                             ? "Gỡ quyền chủ trọ"
@@ -290,13 +294,13 @@ export default function AdminUsersPage() {
                               days: 30,
                             })
                           }
-                          className="rounded-lg border border-gray-300 px-2 py-1 text-xs dark:border-gray-600"
+                          className="btn btn-secondary btn-sm"
                         >
                           Cấp gói
                         </button>
                       </div>
                       {planForm?.id === u.id && (
-                        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-gray-50 p-2 dark:bg-gray-800">
+                        <div className="slide-down flex flex-wrap items-center gap-2 rounded-xl bg-subtle p-2">
                           <select
                             value={planForm.planCode}
                             onChange={(e) =>
@@ -305,7 +309,7 @@ export default function AdminUsersPage() {
                                 planCode: e.target.value,
                               })
                             }
-                            className="rounded border border-gray-300 bg-white px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-900"
+                            className="input !min-h-8 w-auto !px-2 !py-1 text-xs"
                           >
                             {Object.entries(PLAN_LABELS).map(([v, l]) => (
                               <option key={v} value={v}>
@@ -325,7 +329,7 @@ export default function AdminUsersPage() {
                                   days: e.target.value,
                                 })
                               }
-                              className="w-16 rounded border border-gray-300 bg-white px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-900"
+                              className="input !min-h-8 !w-16 !px-2 !py-1 text-xs"
                             />
                           )}
                           {planForm.planCode !== "basic" && (
@@ -333,7 +337,7 @@ export default function AdminUsersPage() {
                           )}
                           <button
                             onClick={grant}
-                            className="rounded bg-indigo-600 px-2 py-1 text-xs text-white"
+                            className="btn btn-primary !min-h-8 px-3 py-1 text-xs"
                           >
                             Xác nhận
                           </button>

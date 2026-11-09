@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -9,7 +9,9 @@ import {
 import Avatar from "../../components/Avatar";
 import Lightbox from "../../components/Lightbox";
 import CountBadge from "../../components/CountBadge";
-import { useNotifications } from "../../context/NotificationContext";
+import { useNotifications } from "../../context/notificationStore";
+import { slideIn } from "../../hooks/useMotion";
+import Icon from "../../components/Icon";
 
 const POLL_MS = 4000;
 const MAX_IMAGES = 4;
@@ -144,10 +146,10 @@ function Composer({ onSend, onFocus }) {
     // Dùng div thay cho form để iOS không coi đây là biểu mẫu (bớt thanh mũi tên lên/xuống)
     <div
       data-composer
-      className="border-t border-gray-200 dark:border-gray-700"
+      className="border-t border-line bg-surface"
     >
       {error && (
-        <p className="mx-3 mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-300">
+        <p className="mx-3 mt-3 alert-error">
           {error}
         </p>
       )}
@@ -157,7 +159,7 @@ function Composer({ onSend, onFocus }) {
           {files.map((f) => (
             <div
               key={f.preview}
-              className="relative h-16 w-16 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
+              className="relative h-16 w-16 overflow-hidden rounded-xl border border-line"
             >
               <img
                 src={f.preview}
@@ -168,9 +170,9 @@ function Composer({ onSend, onFocus }) {
                 type="button"
                 onClick={() => removeFile(f.preview)}
                 aria-label="Bỏ ảnh này"
-                className="absolute right-0 top-0 rounded-bl bg-black/70 px-1.5 text-xs text-white"
+                className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-gray-900/75 text-white"
               >
-                ✕
+                <Icon name="plus" size={13} className="rotate-45" />
               </button>
             </div>
           ))}
@@ -191,9 +193,10 @@ function Composer({ onSend, onFocus }) {
           onClick={() => inputRef.current?.click()}
           disabled={files.length >= MAX_IMAGES || sending}
           title={`Đính kèm ảnh (tối đa ${MAX_IMAGES})`}
-          className="rounded-lg border border-gray-300 px-3 py-2 hover:bg-gray-100 disabled:opacity-40 dark:border-gray-600 dark:hover:bg-gray-800"
+          aria-label="Đính kèm ảnh"
+          className="btn btn-ghost h-11 w-11 shrink-0 !rounded-full !p-0"
         >
-          🖼️
+          <Icon name="image" size={20} />
         </button>
         <input
           ref={textRef}
@@ -209,16 +212,18 @@ function Composer({ onSend, onFocus }) {
           maxLength={2000}
           placeholder="Nhập tin nhắn..."
           enterKeyHint="send"
-          className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 outline-none focus:border-indigo-500 dark:border-gray-600 dark:bg-gray-800"
+          className="input flex-1 !rounded-full"
         />
         <button
           type="button"
           onClick={submit}
           onMouseDown={(e) => e.preventDefault()} // không cho nút cướp focus của input
           disabled={sending || (!text.trim() && files.length === 0)}
-          className="rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+          aria-label="Gửi"
+          className="btn btn-primary h-11 shrink-0 !rounded-full px-4"
         >
-          {sending ? "Đang gửi..." : "Gửi"}
+          <Icon name="send" size={17} />
+          <span className="max-sm:hidden">{sending ? "Đang gửi..." : "Gửi"}</span>
         </button>
       </div>
     </div>
@@ -243,6 +248,7 @@ export default function MessagesPage() {
   const listRef = useRef(null); // khung cuộn của tin nhắn
   const stickRef = useRef(true); // đang ở sát cuối khung chat thì mới tự cuộn theo tin mới
   const firstScrollRef = useRef(true);
+  const seenIdsRef = useRef({ conversation: null, ids: new Set() }); // tin đã hiển thị (để chỉ tin mới trượt lên)
 
   const isMobile = useIsMobile();
   const mobileChat = isMobile && !!conversationId; // điện thoại + đang mở một cuộc trò chuyện
@@ -284,14 +290,20 @@ export default function MessagesPage() {
     if (found) navigate(`/messages/${found.id}`, { replace: true });
   }, [conversationId, wantedUser, convs, convsLoaded, navigate]);
 
+  // Đổi cuộc trò chuyện: xóa tin nhắn và lỗi cũ ngay trong lúc render (cách React khuyến nghị, thay vì setState trong effect)
+  const [shownConversation, setShownConversation] = useState(conversationId);
+  if (shownConversation !== conversationId) {
+    setShownConversation(conversationId);
+    setMessages([]);
+    setError("");
+  }
+
   // Tải tin nhắn + polling
   useEffect(() => {
     if (!conversationId) return;
     let active = true;
     let initial = true;
     lastRef.current = null;
-    setMessages([]);
-    setError("");
     firstScrollRef.current = true;
     stickRef.current = true;
 
@@ -435,24 +447,40 @@ export default function MessagesPage() {
 
   const active = convs.find((c) => c.id === conversationId);
 
+
+  // Tin mới đến hoặc vừa gửi trượt lên từ dưới; lượt tải đầu của mỗi cuộc trò chuyện hiện ngay
+  useLayoutEffect(() => {
+    const seen = seenIdsRef.current;
+    if (seen.conversation !== conversationId) {
+      seen.conversation = conversationId;
+      seen.ids = new Set();
+    }
+    const firstBatch = seen.ids.size === 0;
+    listRef.current?.querySelectorAll("[data-msg-id]").forEach((el) => {
+      const id = el.dataset.msgId;
+      if (seen.ids.has(id)) return;
+      seen.ids.add(id);
+      if (!firstBatch) slideIn(el, { y: 16, duration: 320 });
+    });
+  }, [messages, conversationId]);
   return (
     <div
       style={mobileChat ? { top: vv.top, height: vv.height } : undefined}
       className={
         mobileChat
-          ? "fixed inset-x-0 z-50 flex flex-col overflow-hidden bg-white dark:bg-gray-900"
-          : "mx-auto grid h-[70vh] max-w-6xl overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 md:grid-cols-[280px_1fr]"
+          ? "fixed inset-x-0 z-50 flex flex-col overflow-hidden bg-surface"
+          : "card grid h-[calc(100svh-12rem)] min-h-[32rem] overflow-hidden shadow-[var(--shadow-soft)] md:grid-cols-[19rem_1fr]"
       }
     >
       {/* Danh sách hội thoại: trên điện thoại sẽ ẩn khi đã mở một cuộc trò chuyện */}
       <aside
-        className={`overflow-y-auto border-b border-gray-200 dark:border-gray-700 md:border-b-0 md:border-r ${
+        className={`overflow-y-auto border-b border-line bg-surface md:border-b-0 md:border-r ${
           conversationId ? "hidden md:block" : ""
         }`}
       >
-        <h2 className="px-4 py-3 font-semibold">Tin nhắn</h2>
+        <h2 className="px-5 pb-2 pt-5 text-lg font-semibold">Tin nhắn</h2>
         {convsLoaded && convs.length === 0 && (
-          <p className="px-4 text-sm text-gray-500 dark:text-gray-400">
+          <p className="px-4 text-sm text-muted">
             Chưa có cuộc trò chuyện nào. Hãy kết nối với ai đó trước.
           </p>
         )}
@@ -460,7 +488,7 @@ export default function MessagesPage() {
           <button
             key={c.id}
             onClick={() => navigate(`/messages/${c.id}`)}
-            className={`flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 ${c.id === conversationId ? "bg-indigo-50 dark:bg-gray-800" : ""}`}
+            className={`relative flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-subtle ${c.id === conversationId ? "bg-subtle before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-r-full before:bg-brand" : ""}`}
           >
             <Avatar
               src={c.other.avatarUrl}
@@ -474,7 +502,7 @@ export default function MessagesPage() {
                 {c.other.displayName}
               </p>
               <p
-                className={`truncate text-xs ${c.unread > 0 ? "font-semibold text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}
+                className={`truncate text-xs ${c.unread > 0 ? "font-semibold text-ink" : "text-muted"}`}
               >
                 {c.lastMessage?.text || "Chưa có tin nhắn"}
               </p>
@@ -493,19 +521,20 @@ export default function MessagesPage() {
         }`}
       >
         {!conversationId ? (
-          <div className="flex flex-1 items-center justify-center text-gray-500 dark:text-gray-400">
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-canvas/40 text-muted">
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-subtle text-brand"><Icon name="message" size={24} /></span>
             Chọn một cuộc trò chuyện để bắt đầu
           </div>
         ) : (
           <>
-            <header className="flex items-center gap-3 border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+            <header className="flex items-center gap-3 border-b border-line bg-surface px-4 py-3">
               <button
                 type="button"
                 onClick={() => navigate("/messages")}
                 aria-label="Quay lại danh sách"
-                className="-ml-1 rounded-lg px-2 py-1 text-xl hover:bg-gray-100 dark:hover:bg-gray-800 md:hidden"
+                className="btn btn-ghost -ml-1 h-10 w-10 !p-0 md:hidden"
               >
-                ←
+                <Icon name="chevronLeft" size={20} />
               </button>
               {active && (
                 <Avatar
@@ -522,7 +551,7 @@ export default function MessagesPage() {
             <div
               ref={listRef}
               onScroll={handleListScroll}
-              className="flex-1 space-y-2 overflow-y-auto p-4"
+              className="flex-1 space-y-2 overflow-y-auto bg-canvas/40 p-4 sm:p-5"
             >
               {messages.map((m) => {
                 const mine = m.senderId === user.id;
@@ -530,13 +559,14 @@ export default function MessagesPage() {
                 return (
                   <div
                     key={m._id}
+                    data-msg-id={m._id}
                     className={`flex ${mine ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-[75%] rounded-2xl px-3 py-2 ${
+                      className={`max-w-[75%] rounded-2xl px-3.5 py-2 shadow-[var(--shadow-soft)] ${
                         mine
-                          ? "bg-indigo-600 text-white"
-                          : "bg-gray-100 dark:bg-gray-800"
+                          ? "rounded-br-md bg-btn text-btn-ink"
+                          : "rounded-bl-md bg-surface"
                       }`}
                     >
                       {hasImages && (
@@ -550,7 +580,7 @@ export default function MessagesPage() {
                               onClick={() =>
                                 setViewer({ images: m.images, index: i })
                               }
-                              className="overflow-hidden rounded-lg"
+                              className="overflow-hidden rounded-xl"
                             >
                               <img
                                 src={url}
@@ -569,7 +599,7 @@ export default function MessagesPage() {
                         </p>
                       )}
                       <p
-                        className={`mt-1 text-right text-[10px] ${mine ? "text-indigo-200" : "text-gray-500"}`}
+                        className={`mt-1 text-right text-[10px] tabular-nums ${mine ? "opacity-75" : "text-muted"}`}
                       >
                         {timeLabel(m.createdAt)}
                       </p>
@@ -580,7 +610,7 @@ export default function MessagesPage() {
             </div>
 
             {error && (
-              <p className="mx-4 mb-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-300">
+              <p className="mx-4 mb-2 alert-error">
                 {error}
               </p>
             )}
@@ -592,7 +622,7 @@ export default function MessagesPage() {
                 onFocus={handleComposerFocus}
               />
             ) : (
-              <p className="border-t border-gray-200 p-3 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+              <p className="border-t border-line p-3 text-center text-sm text-muted">
                 Kết nối đã bị hủy nên không thể nhắn tin tiếp.
               </p>
             )}

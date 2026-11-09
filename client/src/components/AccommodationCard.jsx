@@ -1,6 +1,9 @@
 import { Link, useLocation, useNavigationType } from "react-router-dom";
 import FavoriteButton from "./FavoriteButton";
 import ImageFrame from "./ImageFrame";
+import Icon from "./Icon";
+import NewBadge from "./fx/NewBadge";
+import useHoverCycle from "../hooks/useHoverCycle";
 import { ROOM_TYPE_LABELS, LISTING_STATUS_LABELS, formatVND } from "../utils/labels";
 import { saveLastViewed, readLastViewed, isReturningTo } from "../utils/lastViewed";
 
@@ -12,7 +15,8 @@ export default function AccommodationCard({ item, onFavoriteChange, showFavorite
   const isLastViewed =
     isReturningTo(pathname + search, navType) && readLastViewed()?.id === String(item.id);
 
-  const cover = item.images?.[0];
+  const images = item.images || [];
+  const { index: imgIndex, bind } = useHoverCycle(images.length); // rê chuột: ảnh tự chuyển
   const sub = [item.address?.district, item.area && `${item.area} m²`, ROOM_TYPE_LABELS[item.roomType]]
     .filter(Boolean)
     .join(" · ");
@@ -22,31 +26,44 @@ export default function AccommodationCard({ item, onFavoriteChange, showFavorite
       to={`/accommodation/${item.id}`}
       data-card-id={item.id}
       onClick={() => saveLastViewed(item.id)}
-      className={`relative block overflow-hidden rounded-2xl border transition hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-        isLastViewed
-          ? "border-indigo-400 shadow-[0_0_0_3px_rgba(129,140,248,0.25),0_0_18px_rgba(129,140,248,0.45)]"
-          : "border-gray-200 dark:border-gray-700"
-      }`}
+      data-tilt
+      data-spotlight
+      {...bind}
+      className={`card card-link relative block overflow-hidden ${isLastViewed ? "last-viewed" : ""}`}
     >
-      <ImageFrame src={cover} alt={item.title} fallback="🏠" />
+      <ImageFrame src={images[imgIndex]} alt={item.title} fallback="home" />
+      {images.length > 1 && (
+        <span className="card-dots" aria-hidden="true">
+          {images.map((u, i) => <span key={u} className={i === imgIndex ? "on" : ""} />)}
+        </span>
+      )}
 
       {showFavorite && (
-        <div className="absolute right-2 top-2 z-10">
+        <div className="absolute right-3 top-3 z-10">
           <FavoriteButton listingId={item.id} initial={item.isFavorite} onToggle={onFavoriteChange} />
         </div>
       )}
 
-      <div className="space-y-1 p-4">
-        <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-          {formatVND(item.price)}
-          <span className="text-sm font-normal text-gray-500 dark:text-gray-400">/tháng</span>
-        </p>
-        <h3 className="line-clamp-2 font-medium">{item.title}</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{sub}</p>
+      <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1.5">
+        <NewBadge createdAt={item.createdAt} />
         {item.status !== "available" && (
-          <span className="inline-block rounded-full bg-gray-200 px-2 py-0.5 text-xs dark:bg-gray-700">
+          <span className="rounded-full bg-gray-900/75 px-2.5 py-1 text-xs font-medium text-white backdrop-blur">
             {LISTING_STATUS_LABELS[item.status]}
           </span>
+        )}
+      </div>
+
+      <div className="space-y-1.5 p-4 sm:p-5">
+        <p className="text-lg font-semibold tabular-nums text-indigo-700 dark:text-brand">
+          {formatVND(item.price)}
+          <span className="text-sm font-normal text-muted">/tháng</span>
+        </p>
+        <h3 className="line-clamp-2 font-medium leading-snug">{item.title}</h3>
+        {sub && (
+          <p className="flex items-center gap-1.5 text-sm text-muted">
+            <Icon name="pin" size={14} className="shrink-0" />
+            <span className="truncate">{sub}</span>
+          </p>
         )}
       </div>
     </Link>

@@ -6,6 +6,8 @@ import FormField from "../../components/FormField";
 import ImageUploader from "../../components/ImageUploader";
 import { SelectField, CheckField } from "../../components/FormControls";
 import { AMENITIES, ROOM_TYPE_LABELS, toOptions } from "../../utils/labels";
+import { DetailSkeleton } from "../../components/ListStates";
+import { toast } from "../../components/fx/Toaster";
 
 const emptyForm = {
   title: "", description: "", city: "Hà Nội", district: "", ward: "", street: "",
@@ -63,11 +65,11 @@ const toPayload = (f) => ({
 });
 
 const textareaClass =
-  "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 outline-none focus:border-indigo-500 dark:border-gray-600 dark:bg-gray-800";
+  "input";
 
 function Section({ title, children }) {
   return (
-    <section className="space-y-4 rounded-2xl border border-gray-200 p-5 dark:border-gray-700">
+    <section className="card space-y-4 p-5 sm:p-6">
       <h2 className="text-lg font-semibold">{title}</h2>
       {children}
     </section>
@@ -116,6 +118,7 @@ export default function AccommodationFormPage() {
     try {
       const payload = toPayload(form);
       const { listing } = editing ? await updateAccommodationApi(id, payload) : await createAccommodationApi(payload);
+      toast(editing ? "Đã lưu thay đổi" : "Đã đăng tin, đang chờ duyệt");
       navigate(`/accommodation/${listing.id}`);
     } catch (err) {
       setError(err.response?.data?.message || "Không thể kết nối máy chủ");
@@ -126,26 +129,26 @@ export default function AccommodationFormPage() {
 
   if (!editing && !user.isLandlord) {
     return (
-      <div className="mx-auto max-w-xl space-y-3 rounded-2xl border border-gray-200 p-6 dark:border-gray-700">
-        <h1 className="text-xl font-bold">Chưa thể đăng tin</h1>
+      <div className="card mx-auto max-w-xl space-y-3 p-6 sm:p-8">
+        <h1 className="text-2xl font-semibold">Chưa thể đăng tin</h1>
         <p>Tài khoản của bạn chưa được cấp quyền đăng tin cho thuê. Quyền này do quản trị viên cấp cho chủ trọ.</p>
-        <Link to="/accommodation" className="text-indigo-600 hover:underline dark:text-indigo-400">← Quay lại tìm phòng</Link>
+        <Link to="/accommodation" className="font-medium text-indigo-700 underline-offset-4 hover:underline dark:text-brand">Quay lại tìm phòng</Link>
       </div>
     );
   }
-  if (loading) return <p>Đang tải...</p>;
+  if (loading) return <DetailSkeleton />;
 
   return (
     <form onSubmit={handleSubmit} className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold">{editing ? "Chỉnh sửa tin cho thuê" : "Đăng tin cho thuê"}</h1>
+      <h1 className="text-3xl font-semibold">{editing ? "Chỉnh sửa tin cho thuê" : "Đăng tin cho thuê"}</h1>
 
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-300">{error}</p>}
+      {error && <p className="alert-error">{error}</p>}
 
       <Section title="Thông tin chính">
         <FormField label="Tiêu đề" id="title" value={form.title} onChange={onText} required minLength={5} maxLength={150}
           placeholder="Phòng trọ khép kín 25m², gần ĐH Ngoại thương" />
         <div>
-          <label htmlFor="description" className="mb-1 block text-sm font-medium">Mô tả</label>
+          <label htmlFor="description" className="label">Mô tả</label>
           <textarea id="description" name="description" rows={5} value={form.description} onChange={onText} className={textareaClass} />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -187,7 +190,7 @@ export default function AccommodationFormPage() {
         </div>
         <FormField label="Chi phí khác" id="otherCost" value={form.otherCost} onChange={onText} placeholder="Phí vệ sinh 30k/tháng" />
         <div>
-          <label htmlFor="rentalTerms" className="mb-1 block text-sm font-medium">Điều khoản thuê</label>
+          <label htmlFor="rentalTerms" className="label">Điều khoản thuê</label>
           <textarea id="rentalTerms" name="rentalTerms" rows={3} value={form.rentalTerms} onChange={onText} className={textareaClass} />
         </div>
         <FormField label="Số điện thoại / Zalo liên hệ" id="contactPhone" value={form.contactPhone} onChange={onText} placeholder="0900000000" />
@@ -195,10 +198,10 @@ export default function AccommodationFormPage() {
 
       <div className="flex gap-3">
         <button type="submit" disabled={saving}
-          className="flex-1 rounded-lg bg-indigo-600 py-3 font-medium text-white hover:bg-indigo-700 disabled:opacity-60">
+          className="btn btn-primary h-12 flex-1 text-base">
           {saving ? "Đang lưu..." : editing ? "Lưu thay đổi" : "Đăng tin"}
         </button>
-        <button type="button" onClick={() => navigate(-1)} className="rounded-lg border border-gray-300 px-6 py-3 dark:border-gray-600">
+        <button type="button" onClick={() => navigate(-1)} className="btn btn-secondary h-12 px-6">
           Hủy
         </button>
       </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { myBillingApi } from "../../api/billing";
 import { PLAN_LABELS, PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS, formatVND } from "../../utils/labels";
+import { EmptyState } from "../../components/ListStates";
 
 const STATUS_COLOR = {
   success: "text-green-600 dark:text-green-400",
@@ -19,8 +20,8 @@ function UsageBar({ label, used, limit, unsupported }) {
         <span>{label}</span>
         <span className="font-medium">{unsupported ? "Gói hiện tại chưa hỗ trợ" : `${used}/${limit}`}</span>
       </div>
-      <div className="h-2 rounded-full bg-gray-200 dark:bg-gray-700">
-        <div className={`h-2 rounded-full ${color}`} style={{ width: `${unsupported ? 0 : pct}%` }} />
+      <div className="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+        <div className={`bar-grow h-2 rounded-full ${color}`} style={{ width: `${unsupported ? 0 : pct}%` }} />
       </div>
     </div>
   );
@@ -40,33 +41,33 @@ export default function BillingPage() {
     };
   }, []);
 
-  if (error) return <p className="rounded-lg bg-red-50 px-3 py-2 text-red-600 dark:bg-red-950 dark:text-red-300">{error}</p>;
-  if (!data) return <p>Đang tải...</p>;
+  if (error) return <p className="alert-error">{error}</p>;
+  if (!data) return <div className="skeleton h-64" aria-busy="true" aria-label="Đang tải" />;
 
   const { plan, subscription, limits, usage, payments } = data;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <h1 className="text-2xl font-bold">Gói dịch vụ của tôi</h1>
+      <h1 className="text-3xl font-semibold">Gói dịch vụ của tôi</h1>
 
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gray-200 p-5 dark:border-gray-700">
+      <section className="card enter flex flex-wrap items-center justify-between gap-4 p-6 sm:p-7">
         <div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Gói hiện tại</p>
-          <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{PLAN_LABELS[plan]}</p>
+          <p className="text-sm text-muted">Gói hiện tại</p>
+          <p className="text-3xl font-semibold tabular-nums text-indigo-700 dark:text-brand">{PLAN_LABELS[plan]}</p>
           {subscription ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-muted">
               Hết hạn {new Date(subscription.expiresAt).toLocaleDateString("vi-VN")} (còn {subscription.daysLeft} ngày)
             </p>
           ) : (
-            <p className="text-sm text-gray-500 dark:text-gray-400">Không giới hạn thời gian</p>
+            <p className="text-sm text-muted">Không giới hạn thời gian</p>
           )}
         </div>
-        <Link to="/pricing" className="rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700">
+        <Link to="/pricing" className="btn btn-primary">
           {plan === "basic" ? "Nâng cấp gói" : "Gia hạn / đổi gói"}
         </Link>
       </section>
 
-      <section className="space-y-4 rounded-2xl border border-gray-200 p-5 dark:border-gray-700">
+      <section className="space-y-4 card p-5 sm:p-6">
         <h2 className="text-lg font-semibold">Mức sử dụng</h2>
         <UsageBar label="Yêu cầu kết nối tháng này" used={usage.connectionRequests} limit={limits.maxConnectionRequestsPerMonth} />
         <UsageBar label="Hồ sơ đã xem hôm nay" used={usage.matchViewsToday} limit={limits.maxMatchViewsPerDay} />
@@ -75,30 +76,30 @@ export default function BillingPage() {
           limit={limits.maxActiveAccommodationListings} unsupported={!limits.canPostAccommodation} />
       </section>
 
-      <section className="space-y-3 rounded-2xl border border-gray-200 p-5 dark:border-gray-700">
+      <section className="space-y-3 card p-5 sm:p-6">
         <h2 className="text-lg font-semibold">Lịch sử thanh toán</h2>
         {payments.length === 0 ? (
-          <p className="text-sm text-gray-500 dark:text-gray-400">Chưa có giao dịch nào.</p>
+          <EmptyState icon="card">Chưa có giao dịch nào.</EmptyState>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-gray-500 dark:text-gray-400">
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <th className="py-2 pr-4">Thời gian</th>
-                  <th className="py-2 pr-4">Gói</th>
-                  <th className="py-2 pr-4">Số tiền</th>
-                  <th className="py-2 pr-4">Phương thức</th>
-                  <th className="py-2">Trạng thái</th>
+                  <th>Thời gian</th>
+                  <th>Gói</th>
+                  <th>Số tiền</th>
+                  <th>Phương thức</th>
+                  <th>Trạng thái</th>
                 </tr>
               </thead>
               <tbody>
                 {payments.map((p) => (
-                  <tr key={p.id} className="border-t border-gray-100 dark:border-gray-800">
-                    <td className="py-2 pr-4">{new Date(p.createdAt).toLocaleString("vi-VN")}</td>
-                    <td className="py-2 pr-4">{PLAN_LABELS[p.planCode]}</td>
-                    <td className="py-2 pr-4">{formatVND(p.amount)}</td>
-                    <td className="py-2 pr-4">{PAYMENT_METHOD_LABELS[p.method]}</td>
-                    <td className={`py-2 font-medium ${STATUS_COLOR[p.status]}`}>{PAYMENT_STATUS_LABELS[p.status]}</td>
+                  <tr key={p.id}>
+                    <td>{new Date(p.createdAt).toLocaleString("vi-VN")}</td>
+                    <td>{PLAN_LABELS[p.planCode]}</td>
+                    <td>{formatVND(p.amount)}</td>
+                    <td>{PAYMENT_METHOD_LABELS[p.method]}</td>
+                    <td className={`font-medium ${STATUS_COLOR[p.status]}`}>{PAYMENT_STATUS_LABELS[p.status]}</td>
                   </tr>
                 ))}
               </tbody>

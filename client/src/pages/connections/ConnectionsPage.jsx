@@ -1,12 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   listConnectionsApi, connectionSummaryApi, markSeenApi, acceptApi, rejectApi, cancelApi, disconnectApi, unblockApi,
 } from "../../api/connections";
-import { useNotifications } from "../../context/NotificationContext";
+import { useNotifications } from "../../context/notificationStore";
 import RedDot from "../../components/RedDot";
 import Avatar from "../../components/Avatar";
 import ScoreBadge from "../../components/ScoreBadge";
+import { EmptyState } from "../../components/ListStates";
+import useRequestStatus from "../../hooks/useRequestStatus";
+import { useTabDirection, useTabIndicator } from "../../hooks/useMotion";
+import { confettiFrom } from "../../components/fx/confetti";
+import { toast } from "../../components/fx/Toaster";
 
 const TABS = [
   { key: "received", label: "Nhận được", count: "receivedPending", dot: "received" },
@@ -15,9 +20,9 @@ const TABS = [
   { key: "blocked", label: "Đã chặn" },
 ];
 
-const btn = "rounded-lg px-3 py-1.5 text-sm font-medium";
-const primary = `${btn} bg-indigo-600 text-white hover:bg-indigo-700`;
-const outline = `${btn} border border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800`;
+const btn = "btn btn-sm";
+const primary = `${btn} btn-primary`;
+const outline = `${btn} btn-secondary`;
 
 const EMPTY = {
   received: "Chưa có yêu cầu kết nối nào gửi đến bạn.",
@@ -27,23 +32,24 @@ const EMPTY = {
 };
 
 export default function ConnectionsPage() {
+  const tabsRef = useRef(null);
   const [tab, setTab] = useState("received");
   const [items, setItems] = useState([]);
   const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const { refresh: refreshNotifications } = useNotifications();
 
+  // Đang tải/lỗi suy ra từ khóa yêu cầu (không setState đồng bộ trong effect)
+  const { loading, error, finish, setError } = useRequestStatus(JSON.stringify([tab, reloadKey]));
+
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setError("");
     Promise.all([listConnectionsApi(tab), connectionSummaryApi()])
       .then(([list, sum]) => {
         if (!active) return;
         setItems(list.items);
         setSummary(sum);
+        finish();
         // Đã mở tab này thì xóa chấm đỏ của tab (các mục mới vẫn được đánh dấu "Mới" trong lần hiển thị này)
         if (list.items.some((c) => c.unseen)) {
           markSeenApi(tab)
@@ -55,65 +61,71 @@ export default function ConnectionsPage() {
             .catch(() => {});
         }
       })
-      .catch((err) => active && setError(err.response?.data?.message || "Không thể kết nối máy chủ"))
-      .finally(() => active && setLoading(false));
+      .catch((err) => active && finish(err.response?.data?.message || "Không thể kết nối máy chủ"));
     return () => {
       active = false;
     };
-  }, [tab, reloadKey, refreshNotifications]);
+  }, [tab, reloadKey, refreshNotifications, finish]);
 
-  const act = async (fn) => {
+  const act = async (fn, onSuccess) => {
     setError("");
     try {
       await fn();
+      onSuccess?.();
       setReloadKey((k) => k + 1);
     } catch (err) {
       setError(err.response?.data?.message || "Không thể kết nối máy chủ");
     }
   };
 
+
+  // Gạch chân trượt theo tab, nội dung trượt ngang theo hướng tab được chọn
+  const tabIndex = TABS.findIndex((t) => t.key === tab);
+  useTabIndicator(tabsRef, tabIndex);
+  const tabDir = useTabDirection(tabIndex);
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Kết nối</h1>
+        <h1 className="text-3xl font-semibold">Kết nối</h1>
         {summary && (
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted">
             Đã dùng {summary.requestsUsed}/{summary.requestsLimit} yêu cầu kết nối trong tháng này (gói {summary.plan})
           </p>
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2 border-b border-gray-200 dark:border-gray-700">
+      <div ref={tabsRef} role="tablist" className="tablist flex gap-1 overflow-x-auto border-b border-line">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm ${tab === t.key
-              ? "border-indigo-600 font-semibold text-indigo-600 dark:text-indigo-400"
-              : "border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-gray-100"}`}
+            role="tab"
+            aria-selected={tab === t.key}
+            className="tab whitespace-nowrap"
           >
             {t.label}
             {summary?.unseen?.[t.dot] > 0 && <RedDot className="ml-1 align-middle" />}
             {summary && t.count && summary[t.count] > 0 && (
-              <span className="ml-1 rounded-full bg-indigo-100 px-2 text-xs text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200">
+              <span className="ml-1.5 rounded-full bg-subtle px-2 text-xs font-semibold tabular-nums text-indigo-700 dark:text-brand">
                 {summary[t.count]}
               </span>
             )}
           </button>
         ))}
+        <span aria-hidden="true" className="tab-indicator" />
       </div>
 
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-300">{error}</p>}
-      {loading && <p>Đang tải...</p>}
-      {!loading && items.length === 0 && <p className="text-gray-500 dark:text-gray-400">{EMPTY[tab]}</p>}
+      {error && <p className="alert-error">{error}</p>}
+      {loading && <div className="skeleton h-40" aria-busy="true" aria-label="Đang tải" />}
+      {!loading && items.length === 0 && <EmptyState icon="users">{EMPTY[tab]}</EmptyState>}
 
-      <ul className="space-y-3">
+      <ul data-dir={tabDir} className="stagger space-y-3">
         {items.map((c) => (
-          <li key={c.id} className="flex flex-wrap items-center gap-4 rounded-2xl border border-gray-200 p-4 dark:border-gray-700">
+          <li key={c.id} className="card flex flex-wrap items-center gap-4 p-4 transition-shadow hover:shadow-[var(--shadow-soft)] sm:p-5">
             <Avatar src={c.user.avatarUrl} name={c.user.displayName} />
             <div className="min-w-0 flex-1 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <Link to={`/matching/${c.user.userId}`} className="font-semibold hover:underline">
+                <Link to={`/matching/${c.user.userId}`} className="font-semibold underline-offset-4 hover:text-brand hover:underline">
                   {c.user.displayName}
                 </Link>
                 {c.matchScore !== null && c.matchScore !== undefined && <ScoreBadge score={c.matchScore} />}
@@ -123,19 +135,30 @@ export default function ConnectionsPage() {
                   </span>
                 )}
                 {tab === "sent" && c.status === "rejected" && (
-                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">Đã bị từ chối</span>
+                  <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-muted dark:bg-gray-700">Đã bị từ chối</span>
                 )}
                 {tab === "accepted" && c.unseen && (
-                  <span className="text-xs text-green-600 dark:text-green-400">Đã chấp nhận kết nối của bạn</span>
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Đã chấp nhận kết nối của bạn</span>
                 )}
               </div>
-              {c.message && <p className="text-sm text-gray-600 dark:text-gray-300">“{c.message}”</p>}
+              {c.message && <p className="text-sm text-muted">“{c.message}”</p>}
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {tab === "received" && (
                 <>
-                  <button className={primary} onClick={() => act(() => acceptApi(c.id))}>Chấp nhận</button>
+                  <button
+                    className={primary}
+                    onClick={(e) => {
+                      const btn = e.currentTarget;
+                      act(() => acceptApi(c.id), () => {
+                        confettiFrom(btn);
+                        toast(`Đã kết nối với ${c.user.displayName}`);
+                      });
+                    }}
+                  >
+                    Chấp nhận
+                  </button>
                   <button className={outline} onClick={() => act(() => rejectApi(c.id))}>Từ chối</button>
                 </>
               )}

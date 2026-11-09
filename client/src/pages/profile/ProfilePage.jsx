@@ -4,12 +4,26 @@ import { useAuth } from "../../context/AuthContext";
 import { getMyProfileApi, updateMyProfileApi } from "../../api/profile";
 import FormField from "../../components/FormField";
 import ImageUploader from "../../components/ImageUploader";
+import AvatarUploader from "../../components/AvatarUploader";
+import ProgressRing from "../../components/fx/ProgressRing";
 import { SelectField, SliderField, CheckField } from "../../components/FormControls";
 import {
   CRITERIA_LABELS, GENDER_LABELS, GUEST_LABELS, SHARED_LABELS, PATTERN_LABELS, toOptions,
 } from "../../utils/labels";
 
 const CRITERIA_KEYS = Object.keys(CRITERIA_LABELS);
+
+// Mức độ hoàn thiện hồ sơ (chỉ để hiển thị, khuyến khích người dùng điền đủ)
+const completion = (f) => {
+  const checks = [
+    f.displayName.trim(), f.avatarUrl, f.bio.trim(), f.gender, f.birthYear,
+    f.school.trim() || f.occupation.trim(), f.locations.trim(), f.budgetMin && f.budgetMax,
+    f.interests.trim(), f.roomPhotos.length,
+  ];
+  return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+};
+// Giới tính chỉ Nam/Nữ (Matching ghép người cùng giới tính)
+const GENDER_OPTIONS = toOptions({ male: GENDER_LABELS.male, female: GENDER_LABELS.female });
 
 const emptyForm = {
   displayName: "", avatarUrl: "", bio: "", gender: "", birthYear: "", school: "", occupation: "",
@@ -32,7 +46,8 @@ const fromProfile = (profile) => {
     displayName: profile.displayName || "",
     avatarUrl: profile.avatarUrl || "",
     bio: profile.bio || "",
-    gender: profile.gender || "",
+    // Hồ sơ cũ chọn "Khác"/"Không tiết lộ": để trống, buộc chọn lại Nam hoặc Nữ
+    gender: ["male", "female"].includes(profile.gender) ? profile.gender : "",
     birthYear: profile.birthYear ?? "",
     school: profile.school || "",
     occupation: profile.occupation || "",
@@ -99,9 +114,9 @@ const toPayload = (f) => {
 
 function Section({ title, subtitle, children }) {
   return (
-    <section className="rounded-2xl border border-gray-200 p-5 dark:border-gray-700">
+    <section className="card p-5 sm:p-6">
       <h2 className="text-lg font-semibold">{title}</h2>
-      {subtitle && <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{subtitle}</p>}
+      {subtitle && <p className="mb-4 text-sm text-muted">{subtitle}</p>}
       <div className="mt-3 space-y-4">{children}</div>
     </section>
   );
@@ -153,39 +168,52 @@ export default function ProfilePage() {
     }
   };
 
-  if (loading) return <p>Đang tải hồ sơ...</p>;
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-6" aria-busy="true" aria-label="Đang tải hồ sơ">
+        <div className="skeleton h-10 w-56" />
+        <div className="skeleton h-64" />
+        <div className="skeleton h-64" />
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Hồ sơ của tôi</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Thông tin này dùng để tính mức độ tương thích với người khác.{" "}
-          <Link to="/matching" className="text-indigo-600 hover:underline dark:text-indigo-400">Xem gợi ý →</Link>
-        </p>
+      <div className="flex items-center gap-5">
+        {/* Vòng tiến trình: hồ sơ đã điền được bao nhiêu phần */}
+        <ProgressRing percent={completion(form)} label={`Hồ sơ hoàn thiện ${completion(form)}%`} />
+        <div>
+          <h1 className="text-3xl font-semibold">Hồ sơ của tôi</h1>
+          <p className="text-sm text-muted">
+            Thông tin này dùng để tính mức độ tương thích với người khác.{" "}
+            <Link to="/matching" className="font-medium text-indigo-700 underline-offset-4 hover:underline dark:text-brand">Xem gợi ý →</Link>
+          </p>
+        </div>
       </div>
 
       {msg && (
-        <p className={`rounded-lg px-3 py-2 text-sm ${msg.type === "ok"
-          ? "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
-          : "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-300"}`}>
+        <p className={msg.type === "ok" ? "alert-success" : "alert-error"}>
           {msg.text}
         </p>
       )}
 
       <Section title="Thông tin cơ bản">
         <FormField label="Tên hiển thị" id="displayName" value={form.displayName} onChange={onText} required />
-        <FormField label="Link ảnh đại diện (tùy chọn)" id="avatarUrl" value={form.avatarUrl} onChange={onText} placeholder="https://..." />
+        <AvatarUploader value={form.avatarUrl} name={form.displayName} onChange={(url) => set("avatarUrl", url)} />
         <div>
-          <label htmlFor="bio" className="mb-1 block text-sm font-medium">Giới thiệu bản thân</label>
+          <label htmlFor="bio" className="label">Giới thiệu bản thân</label>
           <textarea
             id="bio" name="bio" rows={3} maxLength={500} value={form.bio} onChange={onText}
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 outline-none focus:border-indigo-500 dark:border-gray-600 dark:bg-gray-800"
+            className="input"
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <SelectField label="Giới tính" id="gender" value={form.gender} onChange={onText}
-            options={toOptions(GENDER_LABELS)} placeholder="-- Chọn --" />
+          <div>
+            <SelectField label="Giới tính" id="gender" value={form.gender} onChange={onText}
+              options={GENDER_OPTIONS} placeholder="-- Chọn --" />
+            <p className="hint mt-1.5">Roomie chỉ ghép bạn cùng phòng cùng giới tính.</p>
+          </div>
           <FormField label="Năm sinh" id="birthYear" type="number" value={form.birthYear} onChange={onText} placeholder="2004" />
           <FormField label="Trường học" id="school" value={form.school} onChange={onText} />
           <FormField label="Nghề nghiệp" id="occupation" value={form.occupation} onChange={onText} />
@@ -263,7 +291,7 @@ export default function ProfilePage() {
       </Section>
 
       <button type="submit" disabled={saving}
-        className="w-full rounded-lg bg-indigo-600 py-3 font-medium text-white hover:bg-indigo-700 disabled:opacity-60">
+        className="w-full btn btn-primary h-12 text-base">
         {saving ? "Đang lưu..." : "Lưu hồ sơ"}
       </button>
     </form>

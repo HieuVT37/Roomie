@@ -80,21 +80,21 @@ export default function AdminPlansPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Gói dịch vụ</h1>
-      <p className="text-sm text-gray-500 dark:text-gray-400">
+      <h1 className="text-3xl font-semibold">Gói dịch vụ</h1>
+      <p className="text-sm text-muted">
         Thay đổi giá chỉ áp dụng cho giao dịch mới. Thay đổi hạn mức áp dụng ngay cho tất cả người dùng đang dùng gói đó.
       </p>
 
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-300">{error}</p>}
-      {notice && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-950 dark:text-green-300">{notice}</p>}
-      {loading && <p>Đang tải...</p>}
+      {error && <p className="alert-error">{error}</p>}
+      {notice && <p className="alert-success">{notice}</p>}
+      {loading && <div className="skeleton h-40" aria-busy="true" aria-label="Đang tải" />}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {plans.map((p) => {
           const f = forms[p.code];
           if (!f) return null;
           return (
-            <section key={p.code} className="space-y-4 rounded-2xl border border-gray-200 p-5 dark:border-gray-700">
+            <section key={p.code} className="space-y-4 card p-5 sm:p-6">
               <h2 className="text-lg font-bold">{p.name}</h2>
               <FormField label="Giá (VNĐ / 30 ngày)" id={`price-${p.code}`} type="number" min="0" step="1000"
                 value={f.price} disabled={p.code === "basic"} onChange={(e) => setField(p.code, { price: e.target.value })} />
@@ -111,7 +111,7 @@ export default function AdminPlansPage() {
                   onChange={(v) => setField(p.code, { isActive: v })} />
               )}
               <button onClick={() => save(p.code)} disabled={savingCode === p.code}
-                className="w-full rounded-lg bg-indigo-600 py-2 font-medium text-white hover:bg-indigo-700 disabled:opacity-60">
+                className="w-full btn btn-primary">
                 {savingCode === p.code ? "Đang lưu..." : "Lưu thay đổi"}
               </button>
             </section>

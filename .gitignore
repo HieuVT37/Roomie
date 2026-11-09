@@ -25,3 +25,9 @@ dist-ssr
 *.sw?
 server/uploads
 server/uploads-private
+# Công cụ thiết kế (skill design-taste-frontend): profile Chrome, ảnh chụp kiểm tra, bản sao skill
+.taste-skill/
+client/.taste-skill/
+.agents/
+.claude/
+skills-lock.json

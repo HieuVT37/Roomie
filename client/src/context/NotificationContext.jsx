@@ -1,15 +1,16 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "./AuthContext";
 import { notificationsApi } from "../api/notifications";
+import { NotificationContext } from "./notificationStore";
 
-const NotificationContext = createContext({ messages: 0, connections: 0, refresh: () => {} });
+const ZERO = { messages: 0, connections: 0 };
 
 const POLL_MS = 10000;
 
 // Số tin nhắn chưa đọc và thông báo kết nối chưa xem, dùng cho chấm đỏ trên thanh menu
 export function NotificationProvider({ children }) {
   const { user } = useAuth();
-  const [counts, setCounts] = useState({ messages: 0, connections: 0 });
+  const [counts, setCounts] = useState(ZERO);
   const enabled = Boolean(user) && user.role !== "admin";
 
   const refresh = useCallback(() => {
@@ -20,10 +21,7 @@ export function NotificationProvider({ children }) {
   }, [enabled]);
 
   useEffect(() => {
-    if (!enabled) {
-      setCounts({ messages: 0, connections: 0 });
-      return undefined;
-    }
+    if (!enabled) return undefined;
     refresh();
     const timer = setInterval(refresh, POLL_MS);
     const onVisible = () => document.visibilityState === "visible" && refresh();
@@ -31,10 +29,11 @@ export function NotificationProvider({ children }) {
     return () => {
       clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
+      setCounts(ZERO); // đăng xuất / đổi tài khoản: không giữ số cũ
     };
   }, [enabled, refresh]);
 
-  return <NotificationContext.Provider value={{ ...counts, refresh }}>{children}</NotificationContext.Provider>;
+  // Khi chưa đăng nhập hoặc là admin: luôn 0
+  const shown = enabled ? counts : ZERO;
+  return <NotificationContext.Provider value={{ ...shown, refresh }}>{children}</NotificationContext.Provider>;
 }
-
-export const useNotifications = () => useContext(NotificationContext);

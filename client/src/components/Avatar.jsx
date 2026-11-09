@@ -7,7 +7,7 @@ export default function Avatar({ src, name, size = 56 }) {
   return (
     <div
       style={style}
-      className="flex shrink-0 items-center justify-center rounded-full bg-indigo-100 font-bold text-indigo-600 dark:bg-indigo-900 dark:text-indigo-200"
+      className="flex shrink-0 items-center justify-center rounded-full bg-indigo-100 font-semibold text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200"
     >
       {(name || "?").charAt(0).toUpperCase()}
     </div>

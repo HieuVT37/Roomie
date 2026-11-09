@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Icon from "./Icon";
 
 // Khung ảnh chuẩn: tỉ lệ cố định, ảnh hiện trọn vẹn không méo, phần thừa là nền mờ.
 export default function ImageFrame({
@@ -6,7 +7,7 @@ export default function ImageFrame({
   alt = "",
   ratio = "aspect-[4/3]",
   priority = false, // true cho ảnh chính ở trang chi tiết (tải ngay)
-  fallback = "🏠",
+  fallback = "home", // tên icon hiển thị khi không có ảnh
   className = "",
   onClick,
   children,
@@ -22,7 +23,7 @@ export default function ImageFrame({
       onKeyDown={clickable ? (e) => (e.key === "Enter" || e.key === " ") && onClick() : undefined}
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
-      className={`relative overflow-hidden bg-gray-100 dark:bg-gray-800 ${ratio} ${
+      className={`zoom-img relative overflow-hidden bg-subtle ${ratio} ${
         clickable ? "cursor-zoom-in" : ""
       } ${className}`}
     >
@@ -48,7 +49,9 @@ export default function ImageFrame({
           />
         </>
       ) : (
-        <div className="flex h-full items-center justify-center text-5xl">{fallback}</div>
+        <div className="flex h-full items-center justify-center text-indigo-300 dark:text-indigo-800">
+          <Icon name={fallback} size={44} />
+        </div>
       )}
       {children}
     </div>

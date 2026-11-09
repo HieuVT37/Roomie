@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import FormField from "../../components/FormField";
+import AuthShell from "../../components/AuthShell";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -25,29 +26,30 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="mx-auto mt-10 max-w-md rounded-2xl border border-gray-200 p-6 shadow-sm dark:border-gray-700">
-      <h1 className="mb-1 text-2xl font-bold">Đăng nhập</h1>
-      <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">Chào mừng bạn quay lại Roomie</p>
+    <AuthShell
+      title="Đăng nhập"
+      subtitle="Chào mừng bạn quay lại Roomie"
+      footer={
+        <>
+          Chưa có tài khoản?{" "}
+          <Link to="/register" className="font-medium text-indigo-700 underline-offset-4 hover:underline dark:text-brand">Đăng ký</Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <FormField floating label="Email" id="email" type="email" value={form.email} onChange={handleChange} required />
+        <FormField floating label="Mật khẩu" id="password" type="password" value={form.password} onChange={handleChange} required />
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <FormField label="Email" id="email" type="email" value={form.email} onChange={handleChange} required />
-        <FormField label="Mật khẩu" id="password" type="password" value={form.password} onChange={handleChange} required />
-
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-300">{error}</p>}
+        {error && <p className="alert-error">{error}</p>}
 
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-lg bg-indigo-600 py-2 font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+          className="btn btn-primary h-12 w-full text-base"
         >
           {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
         </button>
       </form>
-
-      <p className="mt-4 text-center text-sm">
-        Chưa có tài khoản?{" "}
-        <Link to="/register" className="text-indigo-600 hover:underline dark:text-indigo-400">Đăng ký</Link>
-      </p>
-    </div>
+    </AuthShell>
   );
 }

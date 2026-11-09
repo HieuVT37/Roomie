@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { COMPANY } from "../config/company";
+import Icon from "./Icon";
 
 const EXPLORE = [
   { to: "/matching", label: "Tìm bạn cùng phòng" },
@@ -14,10 +15,10 @@ const SUPPORT = [
 ];
 
 // Mọi khối dùng chung các lớp này để khoảng cách luôn đều nhau
-const container = "mx-auto w-full max-w-[75rem] px-6";
-const listClass = "space-y-1 text-sm leading-6";
-const linkClass = "text-gray-600 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400";
-const titleClass = "mb-4 text-sm font-semibold uppercase leading-6 tracking-wide";
+const container = "container-page";
+const listClass = "space-y-2 text-sm leading-6";
+const linkClass = "link";
+const titleClass = "mb-4 text-sm font-semibold leading-6 text-ink";
 
 function Column({ title, children }) {
   return (
@@ -31,8 +32,10 @@ function Column({ title, children }) {
 // Biểu tượng có chiều rộng cố định để chữ ở các dòng luôn thẳng cột
 function ContactRow({ icon, children }) {
   return (
-    <li className="flex items-start gap-3 text-gray-600 dark:text-gray-400">
-      <span aria-hidden="true" className="w-5 shrink-0 text-center">{icon}</span>
+    <li className="flex items-start gap-3 text-muted">
+      <span className="mt-[3px] text-indigo-500">
+        <Icon name={icon} size={17} />
+      </span>
       <span className="min-w-0">{children}</span>
     </li>
   );
@@ -42,13 +45,14 @@ export default function Footer() {
   const socials = COMPANY.socials.filter((s) => s.url);
 
   return (
-    <footer className="mt-16 border-t border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-950 max-md:pb-[calc(3.5rem+env(safe-area-inset-bottom))]" >
-      <div className={`${container} grid gap-10 py-5 sm:grid-cols-2 lg:grid-cols-4`}>
+    <footer className="mt-16 border-t border-line bg-surface max-md:pb-[calc(6rem+env(safe-area-inset-bottom))]">
+      <div className={`${container} grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr]`}>
         <div>
-          <Link to="/" className="mb-4 block text-xl font-bold leading-6 text-indigo-600 dark:text-indigo-400">
+          <Link to="/" className="mb-4 flex w-fit items-center gap-2 text-lg font-semibold leading-6 tracking-tight text-ink">
+            <img src="/roomie-logo.svg" alt="" width="28" height="28" className="rounded-[0.5rem]" />
             {COMPANY.name}
           </Link>
-          <p className="text-sm leading-6 text-gray-600 dark:text-gray-400">{COMPANY.tagline}</p>
+          <p className="max-w-xs text-sm leading-6 text-muted">{COMPANY.tagline}</p>
           {socials.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm leading-6">
               {socials.map((s) => (
@@ -76,20 +80,20 @@ export default function Footer() {
 
         <Column title="Liên hệ">
           <ul className={listClass}>
-            <ContactRow icon="📍">{COMPANY.address}</ContactRow>
-            <ContactRow icon="📞">
+            <ContactRow icon="pin">{COMPANY.address}</ContactRow>
+            <ContactRow icon="phone">
               <a href={`tel:${COMPANY.phone.replace(/\s/g, "")}`} className={linkClass}>{COMPANY.phone}</a>
             </ContactRow>
-            <ContactRow icon="✉️">
+            <ContactRow icon="mail">
               <a href={`mailto:${COMPANY.email}`} className={linkClass}>{COMPANY.email}</a>
             </ContactRow>
-            <ContactRow icon="🕒">{COMPANY.workingHours}</ContactRow>
+            <ContactRow icon="clock">{COMPANY.workingHours}</ContactRow>
           </ul>
         </Column>
       </div>
 
-      <div className="border-t border-gray-200 dark:border-gray-700">
-        <div className={`${container} flex flex-wrap items-center justify-between gap-2 py-4 text-xs leading-5 text-gray-500 dark:text-gray-400`}>
+      <div className="border-t border-line">
+        <div className={`${container} flex flex-wrap items-center justify-between gap-2 py-5 text-xs leading-5 text-muted`}>
           <p>© {new Date().getFullYear()} {COMPANY.legalName}. Bảo lưu mọi quyền.</p>
           <p>Mã số thuế: {COMPANY.taxCode}</p>
         </div>

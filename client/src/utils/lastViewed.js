@@ -10,7 +10,9 @@ export function saveLastViewed(id) {
       KEY,
       JSON.stringify({ id: String(id), path: window.location.pathname + window.location.search })
     );
-  } catch {}
+  } catch {
+    // sessionStorage có thể bị chặn (chế độ riêng tư, hết dung lượng): bỏ qua, không ảnh hưởng chức năng
+  }
 }
 
 export function readLastViewed() {
@@ -57,7 +59,9 @@ export function useReturnState(key, initial) {
       try {
         const raw = sessionStorage.getItem("listState:" + key);
         if (raw !== null) return JSON.parse(raw);
-      } catch {}
+      } catch {
+        // sessionStorage có thể bị chặn (chế độ riêng tư, hết dung lượng): bỏ qua, không ảnh hưởng chức năng
+      }
     }
     return initial;
   });
@@ -65,7 +69,9 @@ export function useReturnState(key, initial) {
   useEffect(() => {
     try {
       sessionStorage.setItem("listState:" + key, JSON.stringify(value));
-    } catch {}
+    } catch {
+      // sessionStorage có thể bị chặn (chế độ riêng tư, hết dung lượng): bỏ qua, không ảnh hưởng chức năng
+    }
   }, [key, value]);
 
   return [value, setValue];

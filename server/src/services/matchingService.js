@@ -140,10 +140,14 @@ export function computeMatch(prefsA, prefsB) {
 }
 
 // Hồ sơ đủ thông tin để tham gia Matching chưa? Trả về danh sách mục còn thiếu
+// Matching chỉ ghép người cùng giới tính, nên giới tính phải là Nam hoặc Nữ
+export const MATCHING_GENDERS = ["male", "female"];
+
 export function missingForMatching(profile) {
   const p = profile?.preferences;
   const missing = [];
-  if (!p) return ["preferences"];
+  if (!MATCHING_GENDERS.includes(profile?.gender)) missing.push("gender");
+  if (!p) return [...missing, "preferences"];
   if (!p.city) missing.push("city");
   if (!p.locations?.length) missing.push("locations");
   if (!p.budget || p.budget.min == null || p.budget.max == null) missing.push("budget");

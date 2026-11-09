@@ -8,3 +8,26 @@ export const num = (v) => {
 };
 
 export const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Tìm tiếng Việt không cần gõ dấu: "cau giay" khớp "Cầu Giấy", "dong da" khớp "Đống Đa".
+// Bỏ dấu chuỗi người dùng gõ, rồi mỗi nguyên âm / chữ d được thay bằng nhóm mọi biến thể có dấu.
+const VI_GROUPS = {
+  a: "aàáạảãâầấậẩẫăằắặẳẵ",
+  e: "eèéẹẻẽêềếệểễ",
+  i: "iìíịỉĩ",
+  o: "oòóọỏõôồốộổỗơờớợởỡ",
+  u: "uùúụủũưừứựửữ",
+  y: "yỳýỵỷỹ",
+  d: "dđ",
+};
+export const viRegex = (text) => {
+  const plain = text
+    .normalize("NFD").replace(/[̀-ͯ]/g, "") // bỏ dấu thanh, dấu mũ
+    .replace(/[đĐ]/g, "d")
+    .toLowerCase()
+    .slice(0, 50);
+  const pattern = [...plain]
+    .map((ch) => (VI_GROUPS[ch] ? `[${VI_GROUPS[ch]}]` : escapeRegex(ch)))
+    .join("");
+  return new RegExp(pattern, "i");
+};

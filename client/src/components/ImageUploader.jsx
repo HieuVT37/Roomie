@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { uploadImagesApi } from "../api/uploads";
+import Icon from "./Icon";
 
 export default function ImageUploader({ images, onChange, max = 8, showCover = true }) {
   const inputRef = useRef(null);
@@ -34,10 +35,10 @@ export default function ImageUploader({ images, onChange, max = 8, showCover = t
     <div className="space-y-3">
       <div className="flex flex-wrap gap-3">
         {images.map((url, i) => (
-          <div key={url} className="relative h-24 w-32 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+          <div key={url} className="relative h-24 w-32 overflow-hidden rounded-xl border border-line">
             <img src={url} alt="" className="h-full w-full object-cover" />
             {showCover && i === 0 && (
-              <span className="absolute left-1 top-1 rounded bg-indigo-600 px-1 text-[10px] text-white">Ảnh bìa</span>
+              <span className="absolute left-1.5 top-1.5 rounded-md bg-gray-900/75 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur">Ảnh bìa</span>
             )}
             <div className="absolute bottom-1 right-1 flex gap-1">
               {showCover && i !== 0 && (
@@ -57,15 +58,16 @@ export default function ImageUploader({ images, onChange, max = 8, showCover = t
             type="button"
             disabled={uploading}
             onClick={() => inputRef.current?.click()}
-            className="flex h-24 w-32 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-sm text-gray-500 hover:border-indigo-500 dark:border-gray-600"
+            className="flex h-24 w-32 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-line text-sm text-muted transition-colors hover:border-brand hover:bg-subtle hover:text-brand"
           >
-            {uploading ? "Đang tải..." : "+ Thêm ảnh"}
+            {!uploading && <Icon name="image" size={20} />}
+            {uploading ? "Đang tải..." : "Thêm ảnh"}
           </button>
         )}
       </div>
 
       <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleFiles} className="hidden" />
-      <p className="text-xs text-gray-500 dark:text-gray-400">JPG, PNG hoặc WebP, tối đa 5MB mỗi ảnh, tối đa {max} ảnh.</p>
+      <p className="text-xs text-muted">JPG, PNG hoặc WebP, tối đa 5MB mỗi ảnh, tối đa {max} ảnh.</p>
       {error && <p className="text-sm text-red-600 dark:text-red-300">{error}</p>}
     </div>
   );

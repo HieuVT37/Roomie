@@ -15,6 +15,18 @@ export const loginLimiter = rateLimit({
   message: msg("Bạn đã đăng nhập sai quá nhiều lần, vui lòng thử lại sau 15 phút"),
 });
 
+// Gửi mã OTP (gửi lại mã xác thực, quên mật khẩu): chống spam email
+export const otpSendLimiter = rateLimit({
+  ...base, windowMs: 15 * 60_000, limit: 8,
+  message: msg("Bạn yêu cầu gửi mã quá nhiều lần, vui lòng thử lại sau 15 phút"),
+});
+
+// Nhập mã OTP: chống dò mã
+export const otpVerifyLimiter = rateLimit({
+  ...base, windowMs: 15 * 60_000, limit: 30,
+  message: msg("Bạn nhập mã quá nhiều lần, vui lòng thử lại sau 15 phút"),
+});
+
 export const registerLimiter = rateLimit({
   ...base, windowMs: 60 * 60_000, limit: 10,
   message: msg("Tạo tài khoản quá nhiều lần từ cùng một địa chỉ, vui lòng thử lại sau"),

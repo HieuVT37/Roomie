@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import FormField from "../../components/FormField";
 import AuthShell from "../../components/AuthShell";
@@ -7,7 +7,10 @@ import PasswordStrength from "../../components/fx/PasswordStrength";
 
 export default function RegisterPage() {
   const { register } = useAuth();
-  const [form, setForm] = useState({ displayName: "", email: "", password: "", confirm: "" });
+  const navigate = useNavigate();
+  // Đến từ trang Quên mật khẩu với email chưa đăng ký: điền sẵn email đó
+  const { state } = useLocation();
+  const [form, setForm] = useState({ displayName: "", email: state?.email || "", password: "", confirm: "" });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -24,11 +27,13 @@ export default function RegisterPage() {
 
     setSubmitting(true);
     try {
-      await register({
+      const data = await register({
         displayName: form.displayName,
         email: form.email,
         password: form.password,
       });
+      // Tài khoản chờ xác thực: sang bước nhập mã 6 số đã gửi về email
+      navigate(`/verify-email?email=${encodeURIComponent(data.email)}`);
     } catch (err) {
       setError(err.response?.data?.message || "Không thể kết nối máy chủ");
       setSubmitting(false);

@@ -33,6 +33,8 @@ const passSchema = new Schema(
     status: { type: String, enum: ["active", "completed", "closed"], default: "active" },
     moderationStatus: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
     moderationNote: { type: String, default: "" },
+    // Lần gửi duyệt gần nhất (tạo tin hoặc người dùng sửa tin): tin chờ duyệt xếp theo mốc này
+    submittedAt: { type: Date, default: Date.now },
   },
   { timestamps: true, collection: "passListings" }
 );

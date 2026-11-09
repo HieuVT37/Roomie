@@ -37,6 +37,8 @@ const accommodationSchema = new Schema(
     status: { type: String, enum: ["available", "rented", "stopped"], default: "available" },
     moderationStatus: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
     moderationNote: { type: String, default: "" },
+    // Lần gửi duyệt gần nhất (tạo tin hoặc người dùng sửa tin): tin chờ duyệt xếp theo mốc này
+    submittedAt: { type: Date, default: Date.now },
     viewCount: { type: Number, default: 0 },
   },
   { timestamps: true, collection: "accommodationListings" }

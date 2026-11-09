@@ -94,7 +94,7 @@ export default function AdminPlansPage() {
           const f = forms[p.code];
           if (!f) return null;
           return (
-            <section key={p.code} className="space-y-4 card p-5 sm:p-6">
+            <section key={p.code} className="card flex flex-col gap-4 p-5 sm:p-6">
               <h2 className="text-lg font-bold">{p.name}</h2>
               <FormField label="Giá (VNĐ / 30 ngày)" id={`price-${p.code}`} type="number" min="0" step="1000"
                 value={f.price} disabled={p.code === "basic"} onChange={(e) => setField(p.code, { price: e.target.value })} />
@@ -110,8 +110,9 @@ export default function AdminPlansPage() {
                 <CheckField id={`active-${p.code}`} label="Đang bán (hiện ở bảng giá)" checked={f.isActive}
                   onChange={(v) => setField(p.code, { isActive: v })} />
               )}
+              {/* mt-auto: nút luôn nằm đáy thẻ, các thẻ thẳng hàng dù số ô khác nhau */}
               <button onClick={() => save(p.code)} disabled={savingCode === p.code}
-                className="w-full btn btn-primary">
+                className="btn btn-primary mt-auto h-11 self-end px-6">
                 {savingCode === p.code ? "Đang lưu..." : "Lưu thay đổi"}
               </button>
             </section>

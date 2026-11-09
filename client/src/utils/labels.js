@@ -95,7 +95,6 @@ export const REPORT_TARGET_LABELS = {
 export const USER_STATUS_LABELS = {
   active: "Hoạt động",
   suspended: "Tạm khóa",
-  banned: "Bị cấm",
   pending: "Chờ kích hoạt",
 };
 export const FAQ_CATEGORY_LABELS = {

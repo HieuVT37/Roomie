@@ -6,6 +6,8 @@ import GuestRoute from "./GuestRoute";
 import HomePage from "../pages/home/HomePage";
 import LoginPage from "../pages/auth/LoginPage";
 import RegisterPage from "../pages/auth/RegisterPage";
+import VerifyEmailPage from "../pages/auth/VerifyEmailPage";
+import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 import ProfilePage from "../pages/profile/ProfilePage";
 import MatchingPage from "../pages/matching/MatchingPage";
 import MatchDetailPage from "../pages/matching/MatchDetailPage";
@@ -48,6 +50,8 @@ export default function AppRoutes() {
         <Route element={<GuestRoute />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         </Route>
 
         {/* Cần đăng nhập */}

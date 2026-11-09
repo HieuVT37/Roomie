@@ -84,7 +84,7 @@ export default function AdminModerationPage() {
 
       <form
         onSubmit={(e) => { e.preventDefault(); setPage(1); setQ(qDraft); }}
-        className="grid items-end gap-4 card p-5 sm:p-6 sm:grid-cols-[1fr_200px_auto]"
+        className="grid items-end gap-4 card p-5 sm:p-6 sm:grid-cols-[1fr_200px_auto_auto]"
       >
         <FormField label="Tìm theo tiêu đề" id="q" value={qDraft} onChange={(e) => setQDraft(e.target.value)} />
         <div>
@@ -95,7 +95,14 @@ export default function AdminModerationPage() {
             {Object.entries(MODERATION_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </div>
-        <button type="submit" className="btn btn-primary">Tìm</button>
+        <button type="submit" className="btn btn-primary"><Icon name="search" size={17} />Tìm kiếm</button>
+        <button
+          type="button"
+          onClick={() => { setQDraft(""); setQ(""); setModeration(""); setPage(1); }}
+          className="btn btn-secondary"
+        >
+          Xóa bộ lọc
+        </button>
       </form>
 
       {error && <p className="alert-error">{error}</p>}
@@ -123,11 +130,18 @@ export default function AdminModerationPage() {
                     <span className={`rounded-full px-2 py-0.5 text-xs ${STATE_COLOR[it.moderationStatus]}`}>
                       {MODERATION_LABELS[it.moderationStatus]}
                     </span>
+                    {it.moderationStatus === "pending" && (
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${it.edited
+                        ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                        : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"}`}>
+                        {it.edited ? "Vừa sửa" : "Tin mới"}
+                      </span>
+                    )}
                     {it.type && <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-muted dark:bg-gray-700">{PASS_TYPE_LABELS[it.type]}</span>}
                   </div>
                   <p className="text-sm font-semibold tabular-nums text-indigo-700 dark:text-brand">{price}</p>
                   <p className="text-xs text-muted">
-                    Người đăng: {it.owner?.displayName} ({it.owner?.email}) · {new Date(it.createdAt).toLocaleString("vi-VN")} · {statusLabel}
+                    Người đăng: {it.owner?.displayName} ({it.owner?.email}) · {it.edited ? "Sửa lúc " : "Gửi lúc "}{new Date(it.submittedAt || it.createdAt).toLocaleString("vi-VN")} · {statusLabel}
                   </p>
                   {it.moderationNote && (
                     <p className="text-xs text-red-600 dark:text-red-300">Lý do từ chối: {it.moderationNote}</p>

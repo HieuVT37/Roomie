@@ -7,6 +7,7 @@ import ImageUploader from "../../components/ImageUploader";
 import AvatarUploader from "../../components/AvatarUploader";
 import ProgressRing from "../../components/fx/ProgressRing";
 import { SelectField, SliderField, CheckField } from "../../components/FormControls";
+import ChangePasswordCard from "../../components/ChangePasswordCard";
 import {
   CRITERIA_LABELS, GENDER_LABELS, GUEST_LABELS, SHARED_LABELS, PATTERN_LABELS, toOptions,
 } from "../../utils/labels";
@@ -179,6 +180,7 @@ export default function ProfilePage() {
   }
 
   return (
+    <div className="space-y-6">
     <form onSubmit={handleSubmit} className="mx-auto max-w-4xl space-y-6">
       <div className="flex items-center gap-5">
         {/* Vòng tiến trình: hồ sơ đã điền được bao nhiêu phần */}
@@ -295,5 +297,9 @@ export default function ProfilePage() {
         {saving ? "Đang lưu..." : "Lưu hồ sơ"}
       </button>
     </form>
+
+    {/* Đổi mật khẩu: cần mật khẩu hiện tại */}
+    <ChangePasswordCard />
+    </div>
   );
 }

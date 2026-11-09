@@ -9,6 +9,10 @@ const getToken = (req) => {
   return req.cookies?.token || (header?.startsWith("Bearer ") ? header.slice(7) : null);
 };
 
+// Token được cấp trước lần đổi/đặt lại mật khẩu gần nhất: coi như hết hiệu lực (đăng xuất thiết bị cũ)
+const tokenOutdated = (payload, user) =>
+  Boolean(user.passwordChangedAt) && payload.iat < Math.floor(user.passwordChangedAt.getTime() / 1000);
+
 export const requireAuth = asyncHandler(async (req, res, next) => {
   const token = getToken(req);
   if (!token) throw httpError(401, "Bạn chưa đăng nhập");
@@ -22,6 +26,7 @@ export const requireAuth = asyncHandler(async (req, res, next) => {
 
   const user = await User.findById(payload.sub);
   if (!user) throw httpError(401, "Tài khoản không tồn tại");
+  if (tokenOutdated(payload, user)) throw httpError(401, "Mật khẩu đã được thay đổi, vui lòng đăng nhập lại");
   if (user.status !== "active") throw httpError(403, "Tài khoản đang bị khóa hoặc chưa kích hoạt");
 
   await ensurePlanFresh(user);
@@ -36,7 +41,7 @@ export const optionalAuth = asyncHandler(async (req, res, next) => {
   try {
     const payload = verifyToken(token);
     const user = await User.findById(payload.sub);
-    if (user && user.status === "active") {
+    if (user && user.status === "active" && !tokenOutdated(payload, user)) {
       await ensurePlanFresh(user);
       req.user = user;
     }

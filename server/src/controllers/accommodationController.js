@@ -209,6 +209,7 @@ export const updateAccommodation = asyncHandler(async (req, res) => {
   for (const key of FIELDS) listing.set(key, req.body[key]);
   listing.moderationStatus = "pending"; // sửa tin thì phải duyệt lại
   listing.moderationNote = "";
+  listing.submittedAt = new Date(); // đưa lên đầu hàng chờ duyệt
   await listing.save();
 
   res.json({ listing: toDto(listing.toObject()) });

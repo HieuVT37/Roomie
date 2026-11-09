@@ -190,6 +190,7 @@ export const updatePass = asyncHandler(async (req, res) => {
   for (const key of Object.keys(data)) listing.set(key, data[key]);
   listing.moderationStatus = "pending"; // sửa bài thì phải duyệt lại
   listing.moderationNote = "";
+  listing.submittedAt = new Date(); // đưa lên đầu hàng chờ duyệt
   await listing.save();
 
   res.json({ listing: toPassDto(listing.toObject()) });

@@ -23,6 +23,7 @@ const userSchema = new mongoose.Schema(
       },
     },
     lastLoginAt: { type: Date, default: null },
+    passwordChangedAt: { type: Date, default: null },
   },
   { timestamps: true, collection: "users" }
 );

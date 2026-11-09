@@ -1,4 +1,3 @@
-import { flushSync } from "react-dom";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -7,7 +6,7 @@ import { PLAN_LABELS } from "../utils/labels";
 import CountBadge from "./CountBadge";
 import Avatar from "./Avatar";
 import Icon from "./Icon";
-import { reducedMotion } from "../hooks/useMotion";
+import { switchThemeWithRipple } from "./fx/themeRipple";
 
 const linkClass = ({ isActive }) =>
   isActive
@@ -33,20 +32,8 @@ export default function Navbar() {
   const isAdmin = user?.role === "admin";
   const displayName = profile?.displayName || user?.email || "";
 
-  const switchTheme = (e) => {
-    if (!document.startViewTransition || reducedMotion()) {
-      toggleTheme();
-      return;
-    }
-    const root = document.documentElement;
-    root.style.setProperty("--vt-x", `${e.clientX}px`);
-    root.style.setProperty("--vt-y", `${e.clientY}px`);
-    const next = theme === "dark" ? "light" : "dark";
-    document.startViewTransition(() => {
-      root.classList.toggle("dark", next === "dark"); // đổi ngay trong khung chuyển cảnh
-      flushSync(toggleTheme);
-    });
-  };
+  // Đổi sáng/tối: giọt nước rơi xuống nút, giao diện mới lan ra như gợn sóng
+  const switchTheme = (e) => switchThemeWithRipple(e, toggleTheme, theme !== "dark");
 
   const handleLogout = async () => {
     await logout();
@@ -138,7 +125,7 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <NavLink to="/login" className={(state) => `${linkClass(state)} text-[0.9375rem]`}>Đăng nhập</NavLink>
+                <NavLink to="/login" className={(state) => `${linkClass(state)} whitespace-nowrap text-[0.9375rem]`}>Đăng nhập</NavLink>
                 <Link to="/register" className="btn btn-primary btn-sm">
                   Đăng ký
                 </Link>

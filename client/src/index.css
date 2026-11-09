@@ -548,8 +548,8 @@
 .alert-error { animation: slide-down 300ms var(--ease-out-soft) both, shake 420ms ease-in-out 280ms; }
 
 /* --- Thông báo nổi (toast) với dấu ✓ tự vẽ --- */
-.toaster { position: fixed; z-index: 70; right: 1rem; bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
-@media (max-width: 767px) { .toaster { left: 1rem; bottom: calc(6.5rem + env(safe-area-inset-bottom)); } }
+.toaster { position: fixed; z-index: 70; right: 1.5rem; bottom: 6.5rem; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+@media (max-width: 767px) { .toaster { left: 1rem; right: 1rem; bottom: calc(11rem + env(safe-area-inset-bottom)); } }
 .toast { pointer-events: auto; display: flex; align-items: center; gap: 0.75rem; min-width: 16rem; max-width: 24rem; padding: 0.75rem 1rem;
   border-radius: 0.875rem; background: var(--surface); color: var(--ink); border: 1px solid var(--line);
   box-shadow: 0 2px 6px rgb(15 23 42 / 0.08), 0 18px 40px -12px rgb(15 23 42 / 0.35);
@@ -573,9 +573,33 @@
 .float-field .input:focus + label, .float-field .input:not(:placeholder-shown) + label { top: 0.55rem; transform: none; font-size: 0.72rem; font-weight: 600; color: var(--brand); }
 
 /* --- Đổi sáng/tối: màu mới lan ra thành vòng tròn từ nút --- */
+/* Giao diện mới lan ra thành vòng tròn từ nút: đường cong êm (tăng tốc nhẹ, chậm dần về cuối).
+   Viền không cắt sắc: dải chuyển tiếp --vt-feather nơi sáng và tối hòa dần vào nhau. */
+@property --vt-radius { syntax: "<length>"; inherits: false; initial-value: 0px; }
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
-::view-transition-new(root) { animation: theme-reveal 650ms var(--ease-out-soft); }
-@keyframes theme-reveal { from { clip-path: circle(0 at var(--vt-x, 90%) var(--vt-y, 0%)); } to { clip-path: circle(150% at var(--vt-x, 90%) var(--vt-y, 0%)); } }
+::view-transition-new(root) {
+  --vt-feather: 240px;
+  -webkit-mask-image: radial-gradient(circle at var(--vt-x, 90%) var(--vt-y, 0%),
+    #000 calc(var(--vt-radius) - var(--vt-feather)), rgb(0 0 0 / 0.55) calc(var(--vt-radius) - var(--vt-feather) * 0.45), transparent var(--vt-radius));
+  mask-image: radial-gradient(circle at var(--vt-x, 90%) var(--vt-y, 0%),
+    #000 calc(var(--vt-radius) - var(--vt-feather)), rgb(0 0 0 / 0.55) calc(var(--vt-radius) - var(--vt-feather) * 0.45), transparent var(--vt-radius));
+  animation: theme-reveal 800ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+/* Chạy tới bán kính + độ rộng dải mềm để cuối cùng phủ kín cả góc xa nhất */
+@keyframes theme-reveal {
+  from { --vt-radius: 0px; }
+  to { --vt-radius: calc(var(--vt-r, 150vmax) + var(--vt-feather, 160px)); } /* luôn khớp độ rộng dải mềm */
+}
+
+/* Trong lúc chuyển: tạm dừng hiệu ứng nền nặng để chuyển cảnh mượt */
+.theme-switching .liquid-blob, .theme-switching .bg-bokeh, .theme-switching .bg-star,
+.theme-switching .glow-blob, .theme-switching .marquee-track, .theme-switching .liquid-wave,
+.theme-switching .float-soft { animation-play-state: paused !important; }
+
+/* Trình duyệt không hỗ trợ View Transitions: màu chuyển dần thay vì nhảy phắt */
+.theme-fade, .theme-fade *, .theme-fade *::before, .theme-fade *::after {
+  transition: background-color 700ms ease, color 700ms ease, border-color 700ms ease, fill 700ms ease, stroke 700ms ease, box-shadow 700ms ease !important;
+}
 
 /* --- Ảnh trong thẻ tự chuyển khi rê chuột: chấm chỉ vị trí --- */
 .card-dots { position: absolute; left: 50%; bottom: 0.6rem; z-index: 3; display: flex; gap: 0.3rem; transform: translateX(-50%); opacity: 0; transition: opacity 250ms; }
@@ -676,7 +700,55 @@
   background: conic-gradient(from var(--border-angle), rgb(91 141 239 / 0.35), transparent 30%, rgb(147 197 253 / 0.35), transparent 70%); filter: blur(18px); }
 @keyframes border-spin { to { --border-angle: 360deg; } }
 
+/* --- Roomie AI: nút tròn góc phải dưới + hộp chat --- */
+.ai-chat { position: fixed; z-index: 65; right: 1.5rem; bottom: 1.5rem; }
+@media (max-width: 767px) { .ai-chat { right: 1rem; bottom: calc(6.25rem + env(safe-area-inset-bottom)); } }
+
+.ai-fab {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  width: 3.75rem; height: 3.75rem; border-radius: 9999px; color: #fff;
+  background: radial-gradient(circle at 30% 25%, #8bb4f7, #4677d6 70%);
+  box-shadow: 0 10px 28px -8px rgb(70 119 214 / 0.65), inset 0 1px 0 rgb(255 255 255 / 0.4);
+  transition: transform 300ms var(--ease-out-soft), box-shadow 300ms var(--ease-out-soft);
+}
+.ai-fab:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 14px 34px -8px rgb(70 119 214 / 0.8), inset 0 1px 0 rgb(255 255 255 / 0.4); }
+.ai-fab:active { transform: scale(0.95); }
+/* Vòng sáng lan ra định kỳ để gây chú ý (dừng khi đã mở) */
+.ai-fab:not(.is-open)::before, .ai-fab:not(.is-open)::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; border: 2px solid #5b8def; opacity: 0;
+  animation: ai-ring 3.2s ease-out infinite;
+}
+.ai-fab:not(.is-open)::after { animation-delay: 1.6s; }
+@keyframes ai-ring { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.7); opacity: 0; } }
+.ai-fab-icon { display: inline-flex; transition: transform 350ms var(--ease-out-soft); }
+.ai-fab.is-open .ai-fab-icon { transform: rotate(180deg); }
+.ai-fab-badge {
+  position: absolute; top: -0.2rem; right: -0.3rem; padding: 0.05rem 0.4rem; border-radius: 9999px;
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.03em; color: #0f172a;
+  background: linear-gradient(135deg, #fde68a, #fbbf24); box-shadow: 0 2px 6px rgb(0 0 0 / 0.2);
+}
+
+.ai-panel {
+  position: absolute; right: 0; bottom: calc(100% + 0.9rem);
+  display: flex; flex-direction: column; overflow: hidden;
+  width: min(24rem, calc(100vw - 2rem)); height: min(36rem, calc(100svh - 9rem));
+  background: var(--glass-strong);
+  transform-origin: bottom right;
+  animation: ai-open 380ms var(--ease-out-soft) both;
+}
+@media (max-width: 767px) { .ai-panel { height: min(34rem, calc(100svh - 14rem)); } }
+@keyframes ai-open { from { opacity: 0; transform: translate3d(0, 16px, 0) scale(0.92); } to { opacity: 1; transform: none; } }
+.ai-msg { animation: msg-up 300ms var(--ease-out-soft) both; }
+
+/* Ba chấm "đang soạn" */
+.ai-typing { display: inline-flex; gap: 0.3rem; align-items: center; }
+.ai-typing span { width: 0.45rem; height: 0.45rem; border-radius: 9999px; background: var(--muted); animation: ai-dot 1.2s ease-in-out infinite; }
+.ai-typing span:nth-child(2) { animation-delay: 0.15s; }
+.ai-typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes ai-dot { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-4px); opacity: 1; } }
+
 @media (prefers-reduced-motion: reduce) {
+  .ai-fab::before, .ai-fab::after { display: none; }
   .glow-ring { animation: none !important; }
   .liquid-blob, .liquid-wave, .bg-star, .bg-bokeh { animation: none !important; }
   .bg-layer { transform: none !important; }

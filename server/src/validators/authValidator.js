@@ -9,6 +9,22 @@ export const registerRules = [
   body("displayName").trim().notEmpty().withMessage("Vui lòng nhập tên hiển thị").isLength({ max: 60 }),
 ];
 
+const strongPassword = (field) =>
+  body(field)
+    .isLength({ min: 8 }).withMessage("Mật khẩu tối thiểu 8 ký tự")
+    .matches(/[A-Za-z]/).withMessage("Mật khẩu cần có chữ cái")
+    .matches(/\d/).withMessage("Mật khẩu cần có chữ số");
+const emailRule = () => body("email").isEmail().withMessage("Email không hợp lệ").normalizeEmail();
+const codeRule = () => body("code").trim().matches(/^\d{6}$/).withMessage("Mã gồm 6 chữ số");
+
+export const emailOnlyRules = [emailRule()];
+export const verifyEmailRules = [emailRule(), codeRule()];
+export const resetPasswordRules = [emailRule(), codeRule(), strongPassword("password")];
+export const changePasswordRules = [
+  body("currentPassword").notEmpty().withMessage("Vui lòng nhập mật khẩu hiện tại"),
+  strongPassword("newPassword"),
+];
+
 export const loginRules = [
   body("email").isEmail().withMessage("Email không hợp lệ").normalizeEmail(),
   body("password").notEmpty().withMessage("Vui lòng nhập mật khẩu"),

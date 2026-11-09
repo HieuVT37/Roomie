@@ -10,12 +10,12 @@ import Pagination from "../../components/Pagination";
 import { SelectField } from "../../components/FormControls";
 import { PLAN_LABELS, USER_STATUS_LABELS, toOptions } from "../../utils/labels";
 import useRequestStatus from "../../hooks/useRequestStatus";
+import Icon from "../../components/Icon";
 
 const initial = { q: "", role: "", status: "", plan: "", landlord: "" };
 const STATUS_COLOR = {
   active: "text-green-600 dark:text-green-400",
   suspended: "text-yellow-600 dark:text-yellow-400",
-  banned: "text-red-600 dark:text-red-400",
   pending: "text-gray-500",
 };
 
@@ -66,6 +66,13 @@ export default function AdminUsersPage() {
     e.preventDefault();
     setPage(1);
     setFilters(draft);
+  };
+
+  // Xóa bộ lọc: về mặc định và tải lại từ trang 1
+  const resetFilters = () => {
+    setDraft(initial);
+    setFilters(initial);
+    setPage(1);
   };
 
   const patchRow = (id, patch) =>
@@ -176,7 +183,7 @@ export default function AdminUsersPage() {
           value={draft.status}
           onChange={onText}
           placeholder="Tất cả"
-          options={toOptions(USER_STATUS_LABELS)}
+          options={toOptions(USER_STATUS_LABELS)} /* Hoạt động, Tạm khóa, Chờ kích hoạt */
         />
         <SelectField
           label="Gói"
@@ -197,12 +204,15 @@ export default function AdminUsersPage() {
             { value: "false", label: "Không" },
           ]}
         />
-        <button
-          type="submit"
-          className="btn btn-primary"
-        >
-          Lọc
-        </button>
+        <div className="flex gap-2 sm:col-span-3 lg:col-span-6">
+          <button type="submit" className="btn btn-primary px-5">
+            <Icon name="search" size={17} />
+            Tìm kiếm
+          </button>
+          <button type="button" onClick={resetFilters} className="btn btn-secondary px-5">
+            Xóa bộ lọc
+          </button>
+        </div>
       </form>
 
       {error && (
@@ -271,7 +281,7 @@ export default function AdminUsersPage() {
                           onChange={(e) => changeStatus(u, e.target.value)}
                           className="input !min-h-9 w-auto !py-1 text-sm"
                         >
-                          {["active", "suspended", "banned"].map((s) => (
+                          {["active", "suspended"].map((s) => (
                             <option key={s} value={s}>
                               {USER_STATUS_LABELS[s]}
                             </option>

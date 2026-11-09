@@ -392,12 +392,21 @@ export const listListings = asyncHandler(async (req, res) => {
   if (keyword) filter.title = new RegExp(escapeRegex(keyword), "i");
 
   const { page, limit } = paging(req.query);
+  // Thứ tự: tin "Chờ duyệt" lên đầu; trong cùng nhóm, lần gửi duyệt gần nhất (tạo mới hoặc vừa sửa) trước.
+  // Tin cũ chưa có submittedAt thì dùng ngày tạo.
   const [rows, total] = await Promise.all([
-    Model.find(filter)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean(),
+    Model.aggregate([
+      { $match: filter },
+      {
+        $addFields: {
+          _pendingFirst: { $cond: [{ $eq: ["$moderationStatus", "pending"] }, 0, 1] },
+          _submittedAt: { $ifNull: ["$submittedAt", "$createdAt"] },
+        },
+      },
+      { $sort: { _pendingFirst: 1, _submittedAt: -1, _id: -1 } },
+      { $skip: (page - 1) * limit },
+      { $limit: limit },
+    ]),
     Model.countDocuments(filter),
   ]);
   const owners = await ownerMap(rows.map((r) => r.ownerId));
@@ -414,6 +423,9 @@ export const listListings = asyncHandler(async (req, res) => {
       moderationStatus: r.moderationStatus,
       moderationNote: r.moderationNote || "",
       createdAt: r.createdAt,
+      submittedAt: r._submittedAt,
+      // Gửi duyệt lại sau khi tạo hơn 1 phút: người dùng đã sửa tin
+      edited: r._submittedAt - r.createdAt > 60_000,
       owner: owners.get(String(r.ownerId)) || null,
     })),
     total,

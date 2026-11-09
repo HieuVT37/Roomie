@@ -17,7 +17,7 @@ export const createReportRules = [
 
 // Admin
 export const userUpdateRules = [
-  body("status").optional().isIn(["active", "suspended", "banned"]).withMessage("Trạng thái không hợp lệ"),
+  body("status").optional().isIn(["active", "suspended"]).withMessage("Trạng thái không hợp lệ"),
   body("isLandlord").optional().isBoolean().toBoolean(),
 ];
 

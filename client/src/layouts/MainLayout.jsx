@@ -1,11 +1,12 @@
 import { useRef } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useRevealOnScroll, useRouteSlide } from "../hooks/useMotion";
 import useGlobalFx from "../hooks/useGlobalFx";
 import Toaster from "../components/fx/Toaster";
 import LiquidBackground from "../components/fx/LiquidBackground";
+import AiChat from "../components/AiChat";
 
 // Các trang /admin/* và /messages/* tự xử lý chuyển động bên trong, không trượt cả khung
 const routeGroup = (path) =>
@@ -13,6 +14,7 @@ const routeGroup = (path) =>
 
 export default function MainLayout() {
   const mainRef = useRef(null);
+  const { pathname } = useLocation();
   useRouteSlide(mainRef, routeGroup);
   useRevealOnScroll(mainRef);
   useGlobalFx(); // nghiêng 3D, vệt sáng, lớp lệch, gợn sóng nút, đường tự vẽ
@@ -29,6 +31,8 @@ export default function MainLayout() {
       </main>
       <Footer />
       <Toaster />
+      {/* Trợ lý Roomie AI (ẩn ở trang Tin nhắn để không che ô soạn tin) */}
+      {!pathname.startsWith("/messages") && <AiChat />}
     </div>
   );
 }

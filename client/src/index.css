@@ -578,16 +578,18 @@
 @property --vt-radius { syntax: "<length>"; inherits: false; initial-value: 0px; }
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 ::view-transition-new(root) {
-  --vt-feather: 240px;
+  --vt-feather: 180px;
   -webkit-mask-image: radial-gradient(circle at var(--vt-x, 90%) var(--vt-y, 0%),
     #000 calc(var(--vt-radius) - var(--vt-feather)), rgb(0 0 0 / 0.55) calc(var(--vt-radius) - var(--vt-feather) * 0.45), transparent var(--vt-radius));
   mask-image: radial-gradient(circle at var(--vt-x, 90%) var(--vt-y, 0%),
     #000 calc(var(--vt-radius) - var(--vt-feather)), rgb(0 0 0 / 0.55) calc(var(--vt-radius) - var(--vt-feather) * 0.45), transparent var(--vt-radius));
-  animation: theme-reveal 800ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  /* Ease-out: bung ra ngay khi bấm rồi chậm dần (ease-in-out cũ khởi động chậm, gây cảm giác trễ) */
+  animation: theme-reveal 700ms cubic-bezier(0.33, 1, 0.68, 1) forwards;
 }
-/* Chạy tới bán kính + độ rộng dải mềm để cuối cùng phủ kín cả góc xa nhất */
+/* Bắt đầu từ bán kính = dải mềm để vòng tròn thấy được ngay khung hình đầu;
+   chạy tới bán kính + độ rộng dải mềm để cuối cùng phủ kín cả góc xa nhất */
 @keyframes theme-reveal {
-  from { --vt-radius: 0px; }
+  from { --vt-radius: var(--vt-feather, 160px); }
   to { --vt-radius: calc(var(--vt-r, 150vmax) + var(--vt-feather, 160px)); } /* luôn khớp độ rộng dải mềm */
 }
 

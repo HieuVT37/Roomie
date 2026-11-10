@@ -572,6 +572,16 @@
   pointer-events: none; transition: top 220ms var(--ease-out-soft), font-size 220ms var(--ease-out-soft), color 220ms, transform 220ms var(--ease-out-soft); }
 .float-field .input:focus + label, .float-field .input:not(:placeholder-shown) + label { top: 0.55rem; transform: none; font-size: 0.72rem; font-weight: 600; color: var(--brand); }
 
+/* --- Nút con mắt hiện/ẩn mật khẩu (FormField) --- */
+.input.has-toggle { padding-right: 2.75rem; }
+.float-field .input.has-toggle + label { right: 2.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Ẩn nút "reveal" riêng của Edge để không bị trùng với nút của mình */
+.input.has-toggle::-ms-reveal, .input.has-toggle::-ms-clear { display: none; }
+.password-toggle { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center;
+  width: 2rem; height: 2rem; border-radius: 9999px; color: var(--muted); cursor: pointer; transition: color 150ms, background-color 150ms; }
+.password-toggle:hover { color: var(--brand); background-color: var(--focus); }
+.password-toggle:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+
 /* --- Đổi sáng/tối: màu mới lan ra thành vòng tròn từ nút --- */
 /* Giao diện mới lan ra thành vòng tròn từ nút: đường cong êm (tăng tốc nhẹ, chậm dần về cuối).
    Viền không cắt sắc: dải chuyển tiếp --vt-feather nơi sáng và tối hòa dần vào nhau. */

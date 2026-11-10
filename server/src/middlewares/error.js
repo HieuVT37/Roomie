@@ -15,7 +15,7 @@ export function errorHandler(err, req, res, next) {
     status = 400;
     message =
       err.code === "LIMIT_FILE_SIZE"
-        ? "Mỗi ảnh tối đa 5MB"
+        ? "Mỗi ảnh tối đa 10MB"
         : err.code === "LIMIT_FILE_COUNT" || err.code === "LIMIT_UNEXPECTED_FILE"
           ? "Bạn đã chọn quá số lượng ảnh cho phép"
           : "Không tải được ảnh";

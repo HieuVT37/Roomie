@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { getPassApi, createPassApi, updatePassApi } from "../../api/pass";
 import FormField from "../../components/FormField";
+import MoneyField from "../../components/MoneyField";
 import ImageUploader from "../../components/ImageUploader";
 import { SelectField, CheckField } from "../../components/FormControls";
 import {
-  PASS_TYPE_LABELS, ITEM_CATEGORY_LABELS, CONDITION_LABELS, DEAL_LABELS, toOptions,
+  PASS_TYPE_LABELS, ITEM_CATEGORY_LABELS, CONDITION_LABELS, DEAL_LABELS, toOptions, normalizeCondition,
 } from "../../utils/labels";
 import { DetailSkeleton } from "../../components/ListStates";
 import Icon from "../../components/Icon";
@@ -33,7 +34,7 @@ const fromListing = (l, contact) => ({
   landlordAgreed: Boolean(l.roomInfo?.landlordAgreed),
   transferTerms: l.roomInfo?.transferTerms || "",
   category: l.itemInfo?.category || "furniture",
-  condition: l.itemInfo?.condition || "good",
+  condition: normalizeCondition(l.itemInfo?.condition) || "good",
   dealType: l.itemInfo?.dealType || "sell",
 });
 
@@ -163,10 +164,10 @@ export default function PassFormPage() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           {isRoom ? (
-            <FormField label="Giá thuê (VNĐ/tháng)" id="price" type="number" min="0" step="100000" value={form.price} onChange={onText} required />
+            <MoneyField label="Giá thuê (VNĐ/tháng)" id="price" value={form.price} onChange={onText} required />
           ) : (
-            <FormField label={isGiveAway ? "Giá (cho tặng nên là 0)" : "Giá (để trống nếu thỏa thuận)"} id="price"
-              type="number" min="0" step="10000" value={isGiveAway ? 0 : form.price} onChange={onText} disabled={isGiveAway} />
+            <MoneyField label={isGiveAway ? "Giá (cho tặng nên là 0)" : "Giá (để trống nếu thỏa thuận)"} id="price"
+              value={isGiveAway ? 0 : form.price} onChange={onText} disabled={isGiveAway} />
           )}
           <FormField label="Khu vực" id="area" value={form.area} onChange={onText} placeholder="Thanh Xuân, Hà Nội" />
         </div>
@@ -177,7 +178,7 @@ export default function PassFormPage() {
         <Section title="Thông tin phòng">
           <FormField label="Địa chỉ phòng" id="address" value={form.address} onChange={onText} required />
           <div className="grid gap-4 sm:grid-cols-3">
-            <FormField label="Tiền cọc (VNĐ)" id="deposit" type="number" min="0" step="100000" value={form.deposit} onChange={onText} />
+            <MoneyField label="Tiền cọc (VNĐ)" id="deposit" value={form.deposit} onChange={onText} />
             <FormField label="Hợp đồng còn lại (tháng)" id="remainingLeaseMonths" type="number" min="0" max="120" value={form.remainingLeaseMonths} onChange={onText} required />
             <FormField label="Bàn giao từ ngày" id="availableFrom" type="date" value={form.availableFrom} onChange={onText} />
           </div>

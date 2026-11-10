@@ -13,6 +13,7 @@ import {
   CRITERIA_LABELS, GENDER_LABELS, GUEST_LABELS, SHARED_LABELS, PATTERN_LABELS, formatBudget,
 } from "../../utils/labels";
 import { DetailSkeleton } from "../../components/ListStates";
+import MatchInsightCard from "./MatchInsightCard";
 
 const yesNo = (v) => (v ? "Có" : "Không");
 
@@ -96,7 +97,7 @@ export default function MatchDetailPage() {
       <BackButton to="/matching" />
 
       <div className="card enter flex flex-wrap items-center gap-5 p-5 sm:p-6">
-        <Avatar src={p.avatarUrl} name={p.displayName} size={80} />
+        <Avatar src={p.avatarUrl} name={p.displayName} size={80} zoomable />
         <div className="min-w-0 flex-1">
           <h1 className="text-3xl font-semibold">{p.displayName}</h1>
           <p className="text-sm text-muted">
@@ -141,6 +142,8 @@ export default function MatchDetailPage() {
         ))}
         </div>
       </section>
+
+      <MatchInsightCard key={p.userId} userId={p.userId} />
 
       <section className="card p-5 sm:p-6">
         <h2 className="mb-3 text-lg font-semibold">Thông tin sống chung</h2>

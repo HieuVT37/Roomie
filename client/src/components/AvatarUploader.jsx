@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { uploadImagesApi } from "../api/uploads";
 import Avatar from "./Avatar";
 import Icon from "./Icon";
+import { IMAGE_ACCEPT, IMAGE_FORMATS_TEXT, MAX_IMAGE_MB, checkImageFile } from "../utils/imageFiles";
 
 // Ảnh đại diện: chọn ảnh từ điện thoại (thư viện ảnh / máy ảnh) hoặc máy tính, tải lên server rồi trả về đường dẫn.
 export default function AvatarUploader({ value, name, onChange }) {
@@ -13,8 +14,9 @@ export default function AvatarUploader({ value, name, onChange }) {
     const file = e.target.files?.[0];
     e.target.value = ""; // cho phép chọn lại cùng một file
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setError("Vui lòng chọn một tệp ảnh");
+    const invalid = checkImageFile(file);
+    if (invalid) {
+      setError(invalid);
       return;
     }
     setError("");
@@ -34,7 +36,7 @@ export default function AvatarUploader({ value, name, onChange }) {
       <p className="label">Ảnh đại diện</p>
       <div className="flex flex-wrap items-center gap-4">
         <div className="relative">
-          <Avatar src={value || null} name={name} size={80} />
+          <Avatar src={value || null} name={name} size={80} zoomable />
           {uploading && (
             <span className="absolute inset-0 flex items-center justify-center rounded-full bg-gray-900/55 text-xs font-medium text-white">
               Đang tải...
@@ -46,7 +48,7 @@ export default function AvatarUploader({ value, name, onChange }) {
           <input
             ref={inputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept={IMAGE_ACCEPT}
             onChange={handleFile}
             className="hidden"
           />
@@ -66,7 +68,7 @@ export default function AvatarUploader({ value, name, onChange }) {
           )}
         </div>
       </div>
-      <p className="hint mt-2">Ảnh JPG, PNG hoặc WebP từ điện thoại hoặc máy tính, tối đa 5MB.</p>
+      <p className="hint mt-2">Ảnh {IMAGE_FORMATS_TEXT}, tối đa {MAX_IMAGE_MB}MB.</p>
       {error && <p className="alert-error mt-2">{error}</p>}
     </div>
   );

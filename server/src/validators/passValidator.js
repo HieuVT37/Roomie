@@ -27,7 +27,7 @@ export const passRules = [
   // Pass Items
   body("itemInfo").if(isItem).exists().withMessage("Thiếu thông tin món đồ"),
   body("itemInfo.category").if(isItem).isIn(["furniture", "appliance", "kitchen", "storage", "other"]).withMessage("Danh mục không hợp lệ"),
-  body("itemInfo.condition").if(isItem).isIn(["new", "like_new", "good", "fair", "old"]).withMessage("Tình trạng không hợp lệ"),
+  body("itemInfo.condition").if(isItem).isIn(["new", "good", "fair", "old"]).withMessage("Tình trạng không hợp lệ"),
   body("itemInfo.dealType").if(isItem).isIn(["sell", "give_away", "exchange"]).withMessage("Hình thức không hợp lệ"),
 ];
 

@@ -26,6 +26,7 @@ const passSchema = new Schema(
     // Chỉ dùng khi type = "item"
     itemInfo: {
       category: { type: String, enum: ["furniture", "appliance", "kitchen", "storage", "other"] },
+      // "like_new" chỉ còn để tương thích bài cũ, bài mới không chọn được nữa
       condition: { type: String, enum: ["new", "like_new", "good", "fair", "old"] },
       dealType: { type: String, enum: ["sell", "give_away", "exchange"] },
     },

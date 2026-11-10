@@ -163,7 +163,7 @@ export default function HomePage() {
           <div className="enter">
             <p className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-sm text-muted">
               <Icon name="pin" size={15} className="text-brand" />
-              Chúng tôi luôn bên cạnh bạn
+              Chúng tôi luôn đồng hành cùng bạn
             </p>
             <SplitText
               lines={["Roomie", "Hợp gu trước", "Hợp đồng sau"]}

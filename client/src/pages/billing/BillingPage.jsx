@@ -71,6 +71,7 @@ export default function BillingPage() {
         <h2 className="text-lg font-semibold">Mức sử dụng</h2>
         <UsageBar label="Yêu cầu kết nối tháng này" used={usage.connectionRequests} limit={limits.maxConnectionRequestsPerMonth} />
         <UsageBar label="Hồ sơ đã xem hôm nay" used={usage.matchViewsToday} limit={limits.maxMatchViewsPerDay} />
+        <UsageBar label="Nhận xét AI tháng này" used={usage.aiInsightsThisMonth ?? 0} limit={limits.maxAiInsightsPerMonth ?? 0} />
         <UsageBar label="Bài Pass đang đăng" used={usage.passListings} limit={limits.maxActivePassListings} />
         <UsageBar label="Tin cho thuê đang hiển thị" used={usage.accommodationListings}
           limit={limits.maxActiveAccommodationListings} unsupported={!limits.canPostAccommodation} />

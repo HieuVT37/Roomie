@@ -11,7 +11,7 @@ import MessageButton from "../../components/MessageButton";
 import ImageGallery from "../../components/ImageGallery";
 import {
   PASS_TYPE_LABELS, PASS_STATUS_LABELS, MODERATION_LABELS, ITEM_CATEGORY_LABELS,
-  CONDITION_LABELS, DEAL_LABELS, passPriceText, formatVND,
+  conditionLabel, DEAL_LABELS, passPriceText, formatVND,
 } from "../../utils/labels";
 import { DetailSkeleton } from "../../components/ListStates";
 import Icon from "../../components/Icon";
@@ -116,7 +116,7 @@ export default function PassDetailPage() {
             ) : (
               <>
                 <Row label="Danh mục" value={ITEM_CATEGORY_LABELS[item.category]} />
-                <Row label="Tình trạng" value={CONDITION_LABELS[item.condition]} />
+                <Row label="Tình trạng" value={conditionLabel(item.condition)} />
                 <Row label="Hình thức" value={DEAL_LABELS[item.dealType]} />
               </>
             )}
@@ -125,7 +125,7 @@ export default function PassDetailPage() {
 
         <aside className="card h-fit space-y-3 p-5 sm:p-6 md:sticky md:top-28">
           <div className="flex items-center gap-3">
-            <Avatar src={owner.avatarUrl} name={owner.displayName} />
+            <Avatar src={owner.avatarUrl} name={owner.displayName} zoomable />
             <div>
               <p className="text-xs text-muted">Người đăng</p>
               <p className="font-semibold">{owner.displayName}</p>

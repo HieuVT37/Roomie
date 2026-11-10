@@ -90,7 +90,11 @@ export const listPass = asyncHandler(async (req, res) => {
 
   if (["room", "item"].includes(str(q.type))) filter.type = str(q.type);
   if (str(q.category)) filter["itemInfo.category"] = str(q.category);
-  if (str(q.condition)) filter["itemInfo.condition"] = str(q.condition);
+  // "like_new" (Như mới) đã bỏ: bài cũ mang giá trị này được tính là "good" (Tốt)
+  if (str(q.condition)) {
+    const c = str(q.condition);
+    filter["itemInfo.condition"] = c === "good" ? { $in: ["good", "like_new"] } : c;
+  }
   if (str(q.dealType)) filter["itemInfo.dealType"] = str(q.dealType);
 
   const minPrice = num(q.minPrice);

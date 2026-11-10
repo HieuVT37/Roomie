@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import { listPassApi } from "../../api/pass";
 import PassCard from "../../components/PassCard";
 import FormField from "../../components/FormField";
+import MoneyField from "../../components/MoneyField";
 import { SelectField } from "../../components/FormControls";
 import { useRestoreLastViewed, useReturnState } from "../../utils/lastViewed";
 import {
@@ -116,8 +117,8 @@ export default function PassListPage() {
         <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:gap-x-4 lg:grid-cols-4">
           <FormField label="Từ khóa" id="q" value={draft.q} onChange={onText} placeholder="Bàn học, tủ lạnh..." />
           <FormField label="Khu vực" id="area" value={draft.area} onChange={onText} placeholder="Thanh Xuân" />
-          <FormField label="Giá từ (VNĐ)" id="minPrice" type="number" min="0" step="10000" value={draft.minPrice} onChange={onText} />
-          <FormField label="Giá đến (VNĐ)" id="maxPrice" type="number" min="0" step="10000" value={draft.maxPrice} onChange={onText} />
+          <MoneyField label="Giá từ (VNĐ)" id="minPrice" value={draft.minPrice} onChange={onText} />
+          <MoneyField label="Giá đến (VNĐ)" id="maxPrice" value={draft.maxPrice} onChange={onText} />
           {showItemFilters && (
             <>
               <SelectField label="Danh mục" id="category" value={draft.category} onChange={onText} placeholder="Tất cả"

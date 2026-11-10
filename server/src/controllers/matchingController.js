@@ -8,6 +8,7 @@ import MatchView from "../models/MatchView.js";
 import { getPlanLimits } from "../services/planService.js";
 import { todayKey } from "../services/billingService.js";
 import { str } from "../utils/query.js";
+import { getSavedInsight, generateInsight } from "../services/matchInsightService.js";
 
 const visible = (p, key) => p.visibility?.[key] !== false;
 
@@ -134,7 +135,8 @@ async function consumeMatchView(user, targetId) {
   });
 }
 
-export const getMatchDetail = asyncHandler(async (req, res) => {
+// Kiểm tra quyền xem hồ sơ Matching của người khác (dùng chung cho chi tiết và nhận xét AI), tính lượt xem
+async function loadMatchTarget(req) {
   const { userId } = req.params;
   if (!mongoose.isValidObjectId(userId)) throw httpError(400, "Mã người dùng không hợp lệ");
   if (String(userId) === String(req.user._id)) throw httpError(400, "Đây là hồ sơ của chính bạn");
@@ -156,11 +158,34 @@ export const getMatchDetail = asyncHandler(async (req, res) => {
     throw httpError(404, "Không tìm thấy hồ sơ");
   }
 
+  // Mở lại hồ sơ đã xem trong ngày không tính thêm lượt, nên gọi nhận xét AI sau khi xem chi tiết là miễn phí
   await consumeMatchView(req.user, userId);
 
-  res.json({
-    profile: toPublicProfile(target),
-    match: computeMatch(me.preferences, target.preferences),
-    relation,
-  });
+  return { me, target, relation, match: computeMatch(me.preferences, target.preferences) };
+}
+
+export const getMatchDetail = asyncHandler(async (req, res) => {
+  const { target, relation, match } = await loadMatchTarget(req);
+  res.json({ profile: toPublicProfile(target), match, relation });
+});
+
+// Nhận xét của Roomie AI (bổ sung cho điểm thuật toán, không thay thế)
+const insightArgs = (req, me, target, match) => ({
+  user: req.user,
+  targetId: target.userId,
+  mePublic: toPublicProfile({ ...me, visibility: {} }), // dữ liệu của chính người xem: không cần ẩn
+  targetPublic: toPublicProfile(target), // người kia: chỉ những gì họ cho phép công khai
+  match,
+});
+
+// GET: chỉ xem nhận xét đã lưu và số lượt còn lại, không gọi AI
+export const getMatchInsightHandler = asyncHandler(async (req, res) => {
+  const { me, target, match } = await loadMatchTarget(req);
+  res.json(await getSavedInsight(insightArgs(req, me, target, match)));
+});
+
+// POST: người dùng đã bấm xác nhận -> gọi AI, trừ 1 lượt theo gói
+export const createMatchInsightHandler = asyncHandler(async (req, res) => {
+  const { me, target, match } = await loadMatchTarget(req);
+  res.status(201).json(await generateInsight(insightArgs(req, me, target, match)));
 });

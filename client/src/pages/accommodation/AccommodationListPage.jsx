@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import { listAccommodationsApi, accommodationMetaApi } from "../../api/accommodations";
 import AccommodationCard from "../../components/AccommodationCard";
 import FormField from "../../components/FormField";
+import MoneyField from "../../components/MoneyField";
 import { SelectField } from "../../components/FormControls";
 import { AMENITIES, ROOM_TYPE_LABELS, toOptions } from "../../utils/labels";
 import { useRestoreLastViewed, useReturnState } from "../../utils/lastViewed";
@@ -105,8 +106,8 @@ export default function AccommodationListPage() {
               { value: "price_desc", label: "Giá giảm dần" },
               { value: "area_desc", label: "Diện tích lớn nhất" },
             ]} />
-          <FormField label="Giá từ (VNĐ)" id="minPrice" type="number" min="0" step="100000" value={draft.minPrice} onChange={onText} />
-          <FormField label="Giá đến (VNĐ)" id="maxPrice" type="number" min="0" step="100000" value={draft.maxPrice} onChange={onText} />
+          <MoneyField label="Giá từ (VNĐ)" id="minPrice" value={draft.minPrice} onChange={onText} />
+          <MoneyField label="Giá đến (VNĐ)" id="maxPrice" value={draft.maxPrice} onChange={onText} />
           <FormField label="Diện tích từ (m²)" id="minArea" type="number" min="0" value={draft.minArea} onChange={onText} />
 
           {/* Nút thu gọn/mở rộng tiện nghi: góc phải dưới, ngay dưới cột "Sắp xếp" */}

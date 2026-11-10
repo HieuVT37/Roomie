@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { uploadImagesApi } from "../api/uploads";
 import Icon from "./Icon";
+import { IMAGE_ACCEPT, IMAGE_FORMATS_TEXT, MAX_IMAGE_MB, checkImageFile } from "../utils/imageFiles";
 
 export default function ImageUploader({ images, onChange, max = 8, showCover = true }) {
   const inputRef = useRef(null);
@@ -14,6 +15,11 @@ export default function ImageUploader({ images, onChange, max = 8, showCover = t
 
     if (images.length + files.length > max) {
       setError(`Tối đa ${max} ảnh`);
+      return;
+    }
+    const invalid = files.map(checkImageFile).find(Boolean);
+    if (invalid) {
+      setError(invalid);
       return;
     }
     setError("");
@@ -66,8 +72,8 @@ export default function ImageUploader({ images, onChange, max = 8, showCover = t
         )}
       </div>
 
-      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleFiles} className="hidden" />
-      <p className="text-xs text-muted">JPG, PNG hoặc WebP, tối đa 5MB mỗi ảnh, tối đa {max} ảnh.</p>
+      <input ref={inputRef} type="file" accept={IMAGE_ACCEPT} multiple onChange={handleFiles} className="hidden" />
+      <p className="text-xs text-muted">{IMAGE_FORMATS_TEXT}, tối đa {MAX_IMAGE_MB}MB mỗi ảnh, tối đa {max} ảnh.</p>
       {error && <p className="text-sm text-red-600 dark:text-red-300">{error}</p>}
     </div>
   );

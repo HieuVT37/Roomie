@@ -12,11 +12,10 @@ import CountBadge from "../../components/CountBadge";
 import { useNotifications } from "../../context/notificationStore";
 import { slideIn } from "../../hooks/useMotion";
 import Icon from "../../components/Icon";
+import { IMAGE_ACCEPT, checkImageFile } from "../../utils/imageFiles";
 
 const POLL_MS = 4000;
 const MAX_IMAGES = 4;
-const MAX_SIZE = 5 * 1024 * 1024;
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const IMAGE_PREVIEW_TEXT = "📷 Đã gửi ảnh";
 
 const timeLabel = (iso) =>
@@ -97,9 +96,8 @@ function Composer({ onSend, onFocus }) {
     let message = "";
     const valid = [];
     for (const f of picked) {
-      if (!ALLOWED_TYPES.includes(f.type))
-        message = "Chỉ chấp nhận ảnh JPG, PNG hoặc WebP";
-      else if (f.size > MAX_SIZE) message = "Mỗi ảnh tối đa 5MB";
+      const err = checkImageFile(f);
+      if (err) message = err;
       else valid.push(f);
     }
 
@@ -183,7 +181,7 @@ function Composer({ onSend, onFocus }) {
         <input
           ref={inputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept={IMAGE_ACCEPT}
           multiple
           onChange={handlePick}
           className="hidden"
@@ -541,6 +539,7 @@ export default function MessagesPage() {
                   src={active.other.avatarUrl}
                   name={active.other.displayName}
                   size={36}
+                  zoomable
                 />
               )}
               <h2 className="font-semibold">

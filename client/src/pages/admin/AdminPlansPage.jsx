@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { adminPlansApi, adminUpdatePlanApi } from "../../api/admin";
 import FormField from "../../components/FormField";
+import MoneyField from "../../components/MoneyField";
 import { CheckField } from "../../components/FormControls";
 
 const LIMIT_FIELDS = [
   ["maxConnectionRequestsPerMonth", "Yêu cầu kết nối / tháng"],
   ["maxMatchViewsPerDay", "Hồ sơ xem / ngày"],
+  ["maxAiInsightsPerMonth", "Nhận xét AI / tháng"],
   ["maxActivePassListings", "Bài Pass đang đăng"],
   ["maxActiveAccommodationListings", "Tin cho thuê đang hiển thị"],
 ];
@@ -17,6 +19,7 @@ const toForm = (p) => ({
   limits: {
     maxConnectionRequestsPerMonth: p.limits.maxConnectionRequestsPerMonth ?? 0,
     maxMatchViewsPerDay: p.limits.maxMatchViewsPerDay ?? 0,
+    maxAiInsightsPerMonth: p.limits.maxAiInsightsPerMonth ?? 0,
     maxActivePassListings: p.limits.maxActivePassListings ?? 0,
     maxActiveAccommodationListings: p.limits.maxActiveAccommodationListings ?? 0,
     canPostAccommodation: Boolean(p.limits.canPostAccommodation),
@@ -62,6 +65,7 @@ export default function AdminPlansPage() {
         limits: {
           maxConnectionRequestsPerMonth: Number(f.limits.maxConnectionRequestsPerMonth),
           maxMatchViewsPerDay: Number(f.limits.maxMatchViewsPerDay),
+          maxAiInsightsPerMonth: Number(f.limits.maxAiInsightsPerMonth),
           maxActivePassListings: Number(f.limits.maxActivePassListings),
           maxActiveAccommodationListings: Number(f.limits.maxActiveAccommodationListings),
           canPostAccommodation: f.limits.canPostAccommodation,
@@ -96,7 +100,7 @@ export default function AdminPlansPage() {
           return (
             <section key={p.code} className="card flex flex-col gap-4 p-5 sm:p-6">
               <h2 className="text-lg font-bold">{p.name}</h2>
-              <FormField label="Giá (VNĐ / 30 ngày)" id={`price-${p.code}`} type="number" min="0" step="1000"
+              <MoneyField label="Giá (VNĐ / 30 ngày)" id={`price-${p.code}`}
                 value={f.price} disabled={p.code === "basic"} onChange={(e) => setField(p.code, { price: e.target.value })} />
               <FormField label="Mô tả" id={`desc-${p.code}`} value={f.description}
                 onChange={(e) => setField(p.code, { description: e.target.value })} />

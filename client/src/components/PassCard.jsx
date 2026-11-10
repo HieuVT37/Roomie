@@ -5,7 +5,7 @@ import Icon from "./Icon";
 import NewBadge from "./fx/NewBadge";
 import useHoverCycle from "../hooks/useHoverCycle";
 import {
-  PASS_TYPE_LABELS, PASS_STATUS_LABELS, ITEM_CATEGORY_LABELS, CONDITION_LABELS, passPriceText,
+  PASS_TYPE_LABELS, PASS_STATUS_LABELS, ITEM_CATEGORY_LABELS, conditionLabel, passPriceText,
 } from "../utils/labels";
 import { saveLastViewed, readLastViewed, isReturningTo } from "../utils/lastViewed";
 
@@ -20,7 +20,7 @@ export default function PassCard({ item, onFavoriteChange, showFavorite = true }
   const sub =
     item.type === "room"
       ? [item.roomInfo?.remainingLeaseMonths != null && `Còn ${item.roomInfo.remainingLeaseMonths} tháng HĐ`, item.area]
-      : [ITEM_CATEGORY_LABELS[item.itemInfo?.category], CONDITION_LABELS[item.itemInfo?.condition], item.area];
+      : [ITEM_CATEGORY_LABELS[item.itemInfo?.category], conditionLabel(item.itemInfo?.condition), item.area];
 
   return (
     <Link

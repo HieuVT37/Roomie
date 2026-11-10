@@ -33,7 +33,7 @@ Chưa có test tự động.
 | Module | Server | Client |
 |---|---|---|
 | Tài khoản & Gói dịch vụ | `authController`, `profileController`, `billingController`, `services/billingService.js` (activatePlan: cùng gói thì gia hạn, khác gói thì thay; Pro tự có `isLandlord`), `planService.js` | `pages/auth`, `pages/profile`, `pages/billing`, `context/AuthContext.jsx` |
-| Matching | `services/matchingService.js` (8 tiêu chí 0..1, trọng số mặc định 3, điểm đối xứng, dealBreaker < 0.4 ⇒ không hợp), `matchingController` (giới hạn lượt xem/ngày qua `MatchView`) | `pages/matching` |
+| Matching | `services/matchingService.js` (8 tiêu chí 0..1, trọng số mặc định 3, điểm đối xứng, dealBreaker < 0.4 ⇒ không hợp), `matchingController` (giới hạn lượt xem/ngày qua `MatchView`); nhận xét AI: `GET /matching/:userId/insight` chỉ đọc bản đã lưu, `POST` (người dùng bấm nút) mới gọi Gemini → `services/matchInsightService.js` (`geminiService.js`, chỉ điều chỉnh ±10 điểm, cache `MatchInsight` theo fingerprint hồ sơ, lượt/tháng theo gói `maxAiInsightsPerMonth` đếm ở `AiInsightUsage`, AI lỗi thì hoàn lượt) | `pages/matching` (`MatchInsightCard.jsx`) |
 | Kết nối & Tin nhắn | `connectionController`, `services/connectionService.js` (trạng thái pending/accepted/rejected/cancelled/blocked; mỗi kết nối được chấp nhận có đúng 1 Conversation; giới hạn yêu cầu/tháng), `conversationController`, `notificationController` | `pages/connections`, `pages/messages/MessagesPage.jsx`, `context/NotificationContext.jsx` |
 | Tìm phòng | `accommodationController` (chỉ gói có `canPostAccommodation`) | `pages/accommodation` |
 | Pass đồ + Yêu thích | `passController` (type `room`/`item`; `give_away` ⇒ giá 0), `favoriteController` | `pages/pass`, `pages/favorites` |

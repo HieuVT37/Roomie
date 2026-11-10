@@ -17,6 +17,9 @@ import MatchView from "../models/MatchView.js";
 import { activatePlan, PLAN_RANK } from "../services/billingService.js";
 import { httpError, asyncHandler } from "../utils/httpError.js";
 import { str, escapeRegex } from "../utils/query.js";
+import { withDefaultLimits } from "../services/planService.js";
+import MatchInsight from "../models/MatchInsight.js";
+import AiInsightUsage from "../models/AiInsightUsage.js";
 
 const LISTING_MODELS = {
   accommodation: AccommodationListing,
@@ -25,6 +28,7 @@ const LISTING_MODELS = {
 const LIMIT_KEYS = [
   "maxConnectionRequestsPerMonth",
   "maxMatchViewsPerDay",
+  "maxAiInsightsPerMonth",
   "maxActivePassListings",
   "maxActiveAccommodationListings",
   "featuredListingsPerMonth",
@@ -101,7 +105,7 @@ const toPlanDto = (p) => ({
   billingCycle: p.billingCycle,
   description: p.description,
   isActive: p.isActive,
-  limits: p.limits || {},
+  limits: withDefaultLimits(p.code, p.limits),
 });
 
 const toFaqDto = (f) => ({
@@ -373,6 +377,8 @@ export const deleteUser = asyncHandler(async (req, res) => {
     PassListing.deleteMany({ ownerId: uid }),
     Profile.deleteMany({ userId: uid }),
     UserSubscription.deleteMany({ userId: uid }),
+    MatchInsight.deleteMany({ $or: [{ userId: uid }, { targetId: uid }] }),
+    AiInsightUsage.deleteMany({ userId: uid }),
   ]);
 
   await User.deleteOne({ _id: uid });

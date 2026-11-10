@@ -130,7 +130,7 @@ export default function AccommodationDetailPage() {
         {/* Chủ trọ */}
         <aside className="card h-fit space-y-3 p-5 sm:p-6 md:sticky md:top-28">
           <div className="flex items-center gap-3">
-            <Avatar src={owner.avatarUrl} name={owner.displayName} />
+            <Avatar src={owner.avatarUrl} name={owner.displayName} zoomable />
             <div>
               <p className="text-xs text-muted">Chủ trọ</p>
               <p className="font-semibold">{owner.displayName}</p>

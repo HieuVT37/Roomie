@@ -6,6 +6,9 @@ export const PLAN_DAYS = 30;
 const DAY_MS = 86400000;
 
 // Ngày hiện tại theo giờ Việt Nam, dạng "YYYY-MM-DD" (để đếm hạn mức theo ngày)
+// Tháng hiện tại theo giờ Việt Nam: "2026-11"
+export const monthKey = () => todayKey().slice(0, 7);
+
 export const todayKey = () =>
   new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
 

@@ -3,7 +3,7 @@ import { body } from "express-validator";
 const REASONS = ["spam", "scam", "fake_info", "harassment", "inappropriate", "duplicate", "other"];
 const FAQ_CATEGORIES = ["account", "matching", "accommodation", "pass", "subscription", "safety"];
 const LIMIT_KEYS = [
-  "maxConnectionRequestsPerMonth", "maxMatchViewsPerDay", "maxActivePassListings",
+  "maxConnectionRequestsPerMonth", "maxMatchViewsPerDay", "maxAiInsightsPerMonth", "maxActivePassListings",
   "maxActiveAccommodationListings", "featuredListingsPerMonth",
 ];
 

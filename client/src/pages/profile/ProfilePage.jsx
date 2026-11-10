@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getMyProfileApi, updateMyProfileApi } from "../../api/profile";
 import FormField from "../../components/FormField";
+import MoneyField from "../../components/MoneyField";
 import ImageUploader from "../../components/ImageUploader";
 import AvatarUploader from "../../components/AvatarUploader";
 import ProgressRing from "../../components/fx/ProgressRing";
@@ -229,8 +230,8 @@ export default function ProfilePage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="Thành phố" id="city" value={form.city} onChange={onText} />
           <FormField label="Khu vực muốn ở (cách nhau bằng dấu phẩy)" id="locations" value={form.locations} onChange={onText} placeholder="Đống Đa, Cầu Giấy" />
-          <FormField label="Ngân sách tối thiểu (VNĐ/tháng)" id="budgetMin" type="number" step="100000" min="0" value={form.budgetMin} onChange={onText} />
-          <FormField label="Ngân sách tối đa (VNĐ/tháng)" id="budgetMax" type="number" step="100000" min="0" value={form.budgetMax} onChange={onText} />
+          <MoneyField label="Ngân sách tối thiểu (VNĐ/tháng)" id="budgetMin" value={form.budgetMin} onChange={onText} />
+          <MoneyField label="Ngân sách tối đa (VNĐ/tháng)" id="budgetMax" value={form.budgetMax} onChange={onText} />
         </div>
       </Section>
 

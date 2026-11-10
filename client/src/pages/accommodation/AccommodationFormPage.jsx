@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getAccommodationApi, createAccommodationApi, updateAccommodationApi } from "../../api/accommodations";
 import FormField from "../../components/FormField";
+import MoneyField from "../../components/MoneyField";
 import ImageUploader from "../../components/ImageUploader";
 import { SelectField, CheckField } from "../../components/FormControls";
 import { AMENITIES, ROOM_TYPE_LABELS, toOptions } from "../../utils/labels";
@@ -154,8 +155,8 @@ export default function AccommodationFormPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <SelectField label="Loại phòng" id="roomType" value={form.roomType} onChange={onText} options={toOptions(ROOM_TYPE_LABELS)} />
           <FormField label="Diện tích (m²)" id="area" type="number" min="1" step="0.5" value={form.area} onChange={onText} />
-          <FormField label="Giá thuê (VNĐ/tháng)" id="price" type="number" min="0" step="100000" value={form.price} onChange={onText} required />
-          <FormField label="Tiền cọc (VNĐ)" id="deposit" type="number" min="0" step="100000" value={form.deposit} onChange={onText} />
+          <MoneyField label="Giá thuê (VNĐ/tháng)" id="price" value={form.price} onChange={onText} required />
+          <MoneyField label="Tiền cọc (VNĐ)" id="deposit" value={form.deposit} onChange={onText} />
           <FormField label="Số người tối đa" id="maxOccupants" type="number" min="1" max="20" value={form.maxOccupants} onChange={onText} />
           <FormField label="Có thể dọn vào từ" id="availableFrom" type="date" value={form.availableFrom} onChange={onText} />
         </div>
@@ -184,9 +185,9 @@ export default function AccommodationFormPage() {
 
       <Section title="Chi phí và điều khoản">
         <div className="grid gap-4 sm:grid-cols-3">
-          <FormField label="Giá điện (VNĐ/kWh)" id="electricity" type="number" min="0" value={form.electricity} onChange={onText} />
-          <FormField label="Giá nước (VNĐ)" id="water" type="number" min="0" value={form.water} onChange={onText} />
-          <FormField label="Internet (VNĐ/tháng)" id="internet" type="number" min="0" value={form.internet} onChange={onText} />
+          <MoneyField label="Giá điện (VNĐ/kWh)" id="electricity" value={form.electricity} onChange={onText} />
+          <MoneyField label="Giá nước (VNĐ)" id="water" value={form.water} onChange={onText} />
+          <MoneyField label="Internet (VNĐ/tháng)" id="internet" value={form.internet} onChange={onText} />
         </div>
         <FormField label="Chi phí khác" id="otherCost" value={form.otherCost} onChange={onText} placeholder="Phí vệ sinh 30k/tháng" />
         <div>

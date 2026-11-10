@@ -46,7 +46,10 @@ export const ITEM_CATEGORY_LABELS = {
   storage: "Đồ lưu trữ",
   other: "Khác",
 };
-export const CONDITION_LABELS = { new: "Mới", like_new: "Như mới", good: "Tốt", fair: "Khá", old: "Cũ" };
+export const CONDITION_LABELS = { new: "Mới", good: "Tốt", fair: "Khá", old: "Cũ" };
+// Bài cũ có thể còn "like_new" (Như mới, đã bỏ) -> hiển thị như "Tốt"
+export const normalizeCondition = (c) => (c === "like_new" ? "good" : c);
+export const conditionLabel = (c) => CONDITION_LABELS[normalizeCondition(c)];
 export const DEAL_LABELS = { sell: "Bán", give_away: "Cho tặng", exchange: "Trao đổi" };
 
 export const passPriceText = (p) => {

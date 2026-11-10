@@ -5,9 +5,10 @@ import SubscriptionPlan from "../models/SubscriptionPlan.js";
 import PassListing from "../models/PassListing.js";
 import AccommodationListing from "../models/AccommodationListing.js";
 import MatchView from "../models/MatchView.js";
-import { getPlanLimits } from "../services/planService.js";
+import { getPlanLimits, withDefaultLimits } from "../services/planService.js";
+import AiInsightUsage from "../models/AiInsightUsage.js";
 import { countRequestsThisMonth } from "../services/connectionService.js";
-import { PLAN_RANK, activatePlan, findActiveSubscription, todayKey } from "../services/billingService.js";
+import { PLAN_RANK, activatePlan, findActiveSubscription, todayKey, monthKey } from "../services/billingService.js";
 import { httpError, asyncHandler } from "../utils/httpError.js";
 
 const PENDING_TTL_MS = 15 * 60 * 1000;
@@ -29,7 +30,7 @@ const toPlanDto = (p) => ({
   price: p.price,
   billingCycle: p.billingCycle,
   description: p.description,
-  limits: p.limits,
+  limits: withDefaultLimits(p.code, p.limits),
 });
 
 /* ---------------- Bảng giá (công khai) ---------------- */
@@ -42,13 +43,14 @@ export const getPlans = asyncHandler(async (req, res) => {
 /* ---------------- Gói và mức sử dụng của tôi ---------------- */
 export const myBilling = asyncHandler(async (req, res) => {
   const user = req.user;
-  const [limits, sub, passActive, accActive, requestsUsed, viewsToday, payments] = await Promise.all([
+  const [limits, sub, passActive, accActive, requestsUsed, viewsToday, aiUsage, payments] = await Promise.all([
     getPlanLimits(user.currentPlan),
     findActiveSubscription(user._id),
     PassListing.countDocuments({ ownerId: user._id, status: "active" }),
     AccommodationListing.countDocuments({ ownerId: user._id, status: "available" }),
     countRequestsThisMonth(user._id),
     MatchView.countDocuments({ userId: user._id, day: todayKey() }),
+    AiInsightUsage.findOne({ userId: user._id, month: monthKey() }).lean(),
     Payment.find({ userId: user._id }).sort({ createdAt: -1 }).limit(20).lean(),
   ]);
 
@@ -67,6 +69,7 @@ export const myBilling = asyncHandler(async (req, res) => {
     usage: {
       connectionRequests: requestsUsed,
       matchViewsToday: viewsToday,
+      aiInsightsThisMonth: aiUsage?.count || 0,
       passListings: passActive,
       accommodationListings: accActive,
     },

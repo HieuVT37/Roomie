@@ -288,6 +288,7 @@ database.createCollection("subscriptionPlans", opts({
         maxActivePassListings: { bsonType: "int" },
         maxConnectionRequestsPerMonth: { bsonType: "int" },
         maxMatchViewsPerDay: { bsonType: "int" },
+        maxAiInsightsPerMonth: { bsonType: "int" }, // lượt nhận xét AI Matching / tháng
         canPostAccommodation: { bsonType: "bool" },
         maxActiveAccommodationListings: { bsonType: "int" },
         featuredListingsPerMonth: { bsonType: "int" },
@@ -408,7 +409,7 @@ database.subscriptionPlans.insertMany([
     description: "Miễn phí cho người dùng mới",
     features: ["Tạo hồ sơ Matching", "Xem hồ sơ bạn cùng phòng", "Tìm phòng trọ", "Tối đa 3 bài Pass đang hoạt động"],
     limits: {
-      maxActivePassListings: 3, maxConnectionRequestsPerMonth: 5, maxMatchViewsPerDay: 10,
+      maxActivePassListings: 3, maxConnectionRequestsPerMonth: 5, maxMatchViewsPerDay: 10, maxAiInsightsPerMonth: 10,
       canPostAccommodation: false, maxActiveAccommodationListings: 0, featuredListingsPerMonth: 0,
     },
     isActive: true,
@@ -418,7 +419,7 @@ database.subscriptionPlans.insertMany([
     description: "Dành cho người tìm bạn cùng phòng thường xuyên",
     features: ["Hạn mức Matching cao hơn", "10 bài Pass đang hoạt động", "Đăng tin cho thuê phòng", "Bộ lọc nâng cao"],
     limits: {
-      maxActivePassListings: 10, maxConnectionRequestsPerMonth: 30, maxMatchViewsPerDay: 50,
+      maxActivePassListings: 10, maxConnectionRequestsPerMonth: 30, maxMatchViewsPerDay: 50, maxAiInsightsPerMonth: 30,
       canPostAccommodation: true, maxActiveAccommodationListings: 3, featuredListingsPerMonth: 0,
     },
     isActive: true,
@@ -428,7 +429,7 @@ database.subscriptionPlans.insertMany([
     description: "Dành cho người dùng thường xuyên và chủ trọ chuyên nghiệp",
     features: ["Hạn mức cao nhất", "30 bài Pass đang hoạt động", "Đăng nhiều tin cho thuê", "Đẩy tin nổi bật", "Hỗ trợ ưu tiên"],
     limits: {
-      maxActivePassListings: 30, maxConnectionRequestsPerMonth: 200, maxMatchViewsPerDay: 500,
+      maxActivePassListings: 30, maxConnectionRequestsPerMonth: 200, maxMatchViewsPerDay: 500, maxAiInsightsPerMonth: 100,
       canPostAccommodation: true, maxActiveAccommodationListings: 20, featuredListingsPerMonth: 5,
     },
     isActive: true,
@@ -670,7 +671,7 @@ database.passListings.insertMany([
     _id: pass[1], ownerId: ids.huy, type: "item", title: "Bàn học gỗ 1m2 + ghế, còn mới 90%",
     description: "Dùng 1 năm, không trầy xước, tự vận chuyển hoặc hỗ trợ ship nội thành.",
     price: NumberInt(450000), images: ["https://picsum.photos/seed/pass2/800/600"], area: "Thanh Xuân, Hà Nội", contact: "Zalo: 0900000002",
-    itemInfo: { category: "furniture", condition: "like_new", dealType: "sell" },
+    itemInfo: { category: "furniture", condition: "good", dealType: "sell" },
     status: "active", moderationStatus: "approved", createdAt: daysAgo(3), updatedAt: daysAgo(3),
   },
   {

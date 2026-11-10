@@ -7,6 +7,7 @@ import CountUp from "./fx/CountUp";
 const LIMIT_ROWS = [
   ["Yêu cầu kết nối mỗi tháng", (l) => l.maxConnectionRequestsPerMonth],
   ["Hồ sơ xem chi tiết mỗi ngày", (l) => l.maxMatchViewsPerDay],
+  ["Nhận xét AI Matching mỗi tháng", (l) => l.maxAiInsightsPerMonth ?? 0],
   ["Bài Pass đang đăng", (l) => l.maxActivePassListings],
   ["Đăng tin cho thuê phòng", (l) => (l.canPostAccommodation ? `Tối đa ${l.maxActiveAccommodationListings} tin` : "Không")],
 ];

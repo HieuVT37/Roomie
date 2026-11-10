@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -33,7 +34,22 @@ export default function Navbar() {
   const displayName = profile?.displayName || user?.email || "";
 
   // Đổi sáng/tối: giọt nước rơi xuống nút, giao diện mới lan ra như gợn sóng
+  // Chuột: chạy ngay lúc nhấn xuống (pointerdown) thay vì chờ thả ra (click) → bớt ~100ms cảm giác trễ.
+  // Cảm ứng và bàn phím vẫn dùng click (cảm ứng tránh kích hoạt nhầm khi vuốt cuộn trang).
   const switchTheme = (e) => switchThemeWithRipple(e, toggleTheme, theme !== "dark");
+  const themeHandledRef = useRef(false);
+  const onThemePointerDown = (e) => {
+    if (e.pointerType !== "mouse" || e.button !== 0) return;
+    themeHandledRef.current = true;
+    switchTheme(e);
+  };
+  const onThemeClick = (e) => {
+    if (themeHandledRef.current) {
+      themeHandledRef.current = false; // click đi kèm lần nhấn chuột vừa xử lý → bỏ qua
+      return;
+    }
+    switchTheme(e);
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -85,7 +101,8 @@ export default function Navbar() {
 
           <div className="order-2 ml-auto flex items-center gap-2 md:gap-3 xl:order-3 xl:ml-0">
             <button
-              onClick={switchTheme}
+              onPointerDown={onThemePointerDown}
+              onClick={onThemeClick}
               aria-label="Đổi giao diện sáng hoặc tối"
               title={theme === "dark" ? "Giao diện sáng" : "Giao diện tối"}
               className="btn btn-ghost btn-sm h-10 w-10 !px-0"

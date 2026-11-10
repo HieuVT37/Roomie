@@ -52,11 +52,12 @@ export default function RegisterPage() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-5">
-        <FormField floating label="Tên hiển thị" id="displayName" value={form.displayName} onChange={handleChange} required />
-        <FormField floating label="Email" id="email" type="email" value={form.email} onChange={handleChange} required />
-        <FormField floating label="Mật khẩu (tối thiểu 8 ký tự, có chữ và số)" id="password" type="password" value={form.password} onChange={handleChange} required />
+        {/* autoComplete: báo trình duyệt đây là form tạo tài khoản, không tự điền email + mật khẩu đã lưu khi đăng nhập */}
+        <FormField floating label="Tên hiển thị" id="displayName" value={form.displayName} onChange={handleChange} required autoComplete="nickname" />
+        <FormField floating label="Email" id="email" type="email" value={form.email} onChange={handleChange} required autoComplete="off" />
+        <FormField floating label="Mật khẩu (tối thiểu 8 ký tự, có chữ và số)" id="password" type="password" value={form.password} onChange={handleChange} required autoComplete="new-password" />
         <PasswordStrength value={form.password} />
-        <FormField floating label="Nhập lại mật khẩu" id="confirm" type="password" value={form.confirm} onChange={handleChange} required />
+        <FormField floating label="Nhập lại mật khẩu" id="confirm" type="password" value={form.confirm} onChange={handleChange} required autoComplete="new-password" />
 
         {error && <p className="alert-error">{error}</p>}
 
